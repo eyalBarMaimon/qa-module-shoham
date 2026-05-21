@@ -5,7 +5,75 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { exportTablePDF } from '../utils/exportPDF';
 
-// ── Inspection dialog ────────────────────────────────────────────────────────
+// ── Add tool dialog ───────────────────────────────────────────────────────────
+function AddToolDialog({ onClose, onSave }) {
+  const today = new Date().toISOString().slice(0, 10);
+  const [form, setForm] = useState({
+    'שם המכשיר': '', 'מספר סידורי': '', 'תחום מדידה': '',
+    'תאריך בדיקה': today, 'מועד הבא': '', 'מיקום': '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  function toDisplay(iso) {
+    if (!iso) return '';
+    const [y, m, d] = iso.split('-');
+    return `${d}/${m}/${y}`;
+  }
+
+  async function handleSave() {
+    if (!form['שם המכשיר'].trim()) return;
+    setSaving(true);
+    await onSave({
+      ...form,
+      'תאריך בדיקה': toDisplay(form['תאריך בדיקה']),
+      'מועד הבא':    toDisplay(form['מועד הבא']),
+    });
+    setSaving(false);
+    onClose();
+  }
+
+  const field = (label, key, type = 'text', dir = 'rtl') => (
+    <div>
+      <label className="text-xs text-gray-500 block mb-1">{label}</label>
+      <input
+        type={type} value={form[key]} dir={dir}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full"
+      />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl">
+        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+          <div className="font-bold text-base">הוספת מכשיר חדש</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <div className="px-5 py-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2">{field('שם המכשיר *', 'שם המכשיר')}</div>
+          {field('מספר סידורי', 'מספר סידורי')}
+          {field('תחום מדידה', 'תחום מדידה')}
+          {field('תאריך בדיקה', 'תאריך בדיקה', 'date', 'ltr')}
+          {field('מועד הבא', 'מועד הבא', 'date', 'ltr')}
+          <div className="col-span-2">{field('מיקום', 'מיקום')}</div>
+        </div>
+        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">ביטול</button>
+          <button
+            onClick={handleSave}
+            disabled={saving || !form['שם המכשיר'].trim()}
+            className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700 disabled:opacity-50"
+          >
+            {saving ? 'שומר...' : 'הוסף מכשיר'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Inspection dialog ─────────────────────────────────────────────────────────
 function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   const history = useMemo(() =>
     [...historyCol.data]
@@ -36,28 +104,26 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   async function handleSave() {
     if (!form.תאריך) return;
     setSaving(true);
-    const displayDate    = toDisplay(form.תאריך);
+    const displayDate     = toDisplay(form.תאריך);
     const displayNextDate = nextMode === 'note' && form.הערה.trim()
       ? form.הערה.trim()
       : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
 
     await historyCol.appendRow({
-      'מספר סידורי':  tool['מספר סידורי'],
-      'שם המכשיר':    tool['שם המכשיר'],
-      'תאריך בדיקה':  displayDate,
-      'מועד הבא':     displayNextDate,
-      'בוצע על ידי':  form.בוצע_על_ידי,
-      recordedAt:     new Date().toISOString(),
+      'מספר סידורי': tool['מספר סידורי'],
+      'שם המכשיר':   tool['שם המכשיר'],
+      'תאריך בדיקה': displayDate,
+      'מועד הבא':    displayNextDate,
+      'בוצע על ידי': form.בוצע_על_ידי,
+      recordedAt:    new Date().toISOString(),
     });
 
-    // Update tool's current dates
     toolsCol.setData(prev => prev.map(r =>
       r._id === tool._id
         ? { ...r, 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate }
         : r
     ));
     await toolsCol.updateRow(tool._id, { 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate });
-
     await historyCol.fetchSheet();
     setSaving(false);
     setNextMode('date');
@@ -68,7 +134,6 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl">
 
-        {/* Header */}
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div>
             <div className="font-bold text-base">{tool['שם המכשיר']}</div>
@@ -77,7 +142,6 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
 
-        {/* New inspection form */}
         <div className="px-5 py-4 border-b border-gray-100 bg-gray-50">
           <div className="font-semibold text-sm mb-3">עדכון בדיקה חדשה</div>
           <div className="flex flex-wrap gap-3">
@@ -91,14 +155,10 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
               <div className="flex items-center gap-2 mb-1">
                 <label className="text-xs text-gray-500">מועד הבא (אופציונלי)</label>
                 <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
-                  <button type="button"
-                    onClick={() => setNextMode('date')}
-                    className={`px-2 py-0.5 ${nextMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-                  >תאריך</button>
-                  <button type="button"
-                    onClick={() => setNextMode('note')}
-                    className={`px-2 py-0.5 ${nextMode === 'note' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
-                  >הערה</button>
+                  <button type="button" onClick={() => setNextMode('date')}
+                    className={`px-2 py-0.5 ${nextMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>תאריך</button>
+                  <button type="button" onClick={() => setNextMode('note')}
+                    className={`px-2 py-0.5 ${nextMode === 'note' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>הערה</button>
                 </div>
               </div>
               {nextMode === 'date' ? (
@@ -108,19 +168,17 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
               ) : (
                 <input type="text" value={form.הערה}
                   onChange={e => setForm(f => ({ ...f, הערה: e.target.value }))}
-                  placeholder='למשל: אצל ספק, בבדיקה...'
+                  placeholder="למשל: אצל ספק, בבדיקה..."
                   className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-44" />
               )}
             </div>
             <div ref={dropRef} className="relative">
               <label className="text-xs text-gray-500 block mb-1">בוצע על ידי</label>
               <div className="flex gap-1">
-                <input
-                  value={form.בוצע_על_ידי}
+                <input value={form.בוצע_על_ידי}
                   onChange={e => setForm(f => ({ ...f, בוצע_על_ידי: e.target.value }))}
                   placeholder="שם הבודק"
-                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-36"
-                />
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-36" />
                 {employees.length > 0 && (
                   <button type="button" onClick={() => setShowList(s => !s)}
                     className="border border-gray-300 rounded px-2 text-gray-500 hover:text-blue-600 text-xs">▼</button>
@@ -136,16 +194,12 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
               )}
             </div>
           </div>
-          <button
-            onClick={handleSave}
-            disabled={saving || !form.תאריך}
-            className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50"
-          >
+          <button onClick={handleSave} disabled={saving || !form.תאריך}
+            className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
             {saving ? 'שומר...' : 'שמור בדיקה'}
           </button>
         </div>
 
-        {/* History */}
         <div className="flex-1 overflow-y-auto px-5 py-3">
           <div className="font-semibold text-sm mb-2">היסטוריית בדיקות</div>
           {historyCol.loading && <div className="text-gray-400 text-sm">טוען...</div>}
@@ -173,22 +227,23 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
             </table>
           )}
         </div>
-
       </div>
     </div>
   );
 }
 
-// ── Main page ────────────────────────────────────────────────────────────────
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function Tools() {
   const toolsCol   = useSheets('Tools');
   const historyCol = useSheets('ToolsHistory');
   const empCol     = useSheets('Employees');
 
-  const [search, setSearch]             = useState('');
+  const [search, setSearch]           = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [activeTool, setActiveTool]     = useState(null);
-  const [togglingId, setTogglingId]     = useState(null);
+  const [activeTool, setActiveTool]   = useState(null);
+  const [togglingId, setTogglingId]   = useState(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showHidden, setShowHidden]   = useState(false);
 
   useEffect(() => {
     toolsCol.fetchSheet();
@@ -203,15 +258,32 @@ export default function Tools() {
 
   async function handleDeactivate(row) {
     setTogglingId(row._id);
-    toolsCol.setData(prev => prev.map(r =>
-      r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r
-    ));
+    toolsCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
     await toolsCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
     setTogglingId(null);
   }
 
+  async function handleToggleHidden(row) {
+    const nowHidden = row.hidden !== 'true';
+    setTogglingId(row._id);
+    toolsCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, hidden: nowHidden ? 'true' : '' } : r));
+    await toolsCol.updateRow(row._id, { hidden: nowHidden ? 'true' : '' });
+    setTogglingId(null);
+  }
+
+  async function handleAddTool(data) {
+    await toolsCol.appendRow(data);
+    await toolsCol.fetchSheet();
+  }
+
+  const hiddenCount = useMemo(() =>
+    toolsCol.data.filter(r => r.hidden === 'true').length,
+    [toolsCol.data]
+  );
+
   const rows = useMemo(() => {
     return toolsCol.data
+      .filter(r => showHidden || r.hidden !== 'true')
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'tools') }))
       .filter(r => {
         const q = search.toLowerCase();
@@ -219,7 +291,7 @@ export default function Tools() {
         const matchStatus = filterStatus === 'all' || r._status === filterStatus;
         return matchSearch && matchStatus;
       });
-  }, [toolsCol.data, search, filterStatus]);
+  }, [toolsCol.data, search, filterStatus, showHidden]);
 
   const cols = ['#', 'שם המכשיר', 'מספר סידורי', 'תאריך בדיקה', 'מועד הבא', 'מיקום', 'סטטוס'];
 
@@ -244,6 +316,20 @@ export default function Tools() {
           <option value="green">תקין</option>
           <option value="gray">לא פעיל</option>
         </select>
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setShowHidden(s => !s)}
+            className={`px-3 py-1.5 rounded text-sm border ${showHidden ? 'bg-yellow-100 border-yellow-400 text-yellow-800' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}
+          >
+            {showHidden ? `מסתיר מוסתרים (${hiddenCount})` : `הצג מוסתרים (${hiddenCount})`}
+          </button>
+        )}
+        <button
+          onClick={() => setShowAddDialog(true)}
+          className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700"
+        >
+          + הוסף מכשיר
+        </button>
         <button
           onClick={() => exportTablePDF('tools', cols, rows.map(r => cols.map(c => c === 'סטטוס' ? r._status : (r[c] ?? ''))))}
           className="mr-auto bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
@@ -259,12 +345,14 @@ export default function Tools() {
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             {cols.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
-            <th className="border border-[#999] px-2 py-2 font-bold">בדיקה</th>
+            <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
+            <tr key={r._id || i}
+              className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'} ${r.hidden === 'true' ? 'opacity-50' : ''}`}
+            >
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם המכשיר']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מספר סידורי']}</td>
@@ -281,21 +369,23 @@ export default function Tools() {
                     עדכן / היסטוריה
                   </button>
                   {r._status === 'gray' ? (
-                    <button
-                      onClick={() => setActiveTool(r)}
-                      className="text-green-700 text-xs hover:underline whitespace-nowrap"
-                    >
+                    <button onClick={() => setActiveTool(r)}
+                      className="text-green-700 text-xs hover:underline whitespace-nowrap">
                       הפעל
                     </button>
                   ) : (
-                    <button
-                      onClick={() => handleDeactivate(r)}
-                      disabled={togglingId === r._id}
-                      className="text-gray-400 text-xs hover:text-red-500 hover:underline whitespace-nowrap disabled:opacity-50"
-                    >
+                    <button onClick={() => handleDeactivate(r)} disabled={togglingId === r._id}
+                      className="text-gray-400 text-xs hover:text-red-500 hover:underline whitespace-nowrap disabled:opacity-50">
                       {togglingId === r._id ? '...' : 'השבת'}
                     </button>
                   )}
+                  <button
+                    onClick={() => handleToggleHidden(r)}
+                    disabled={togglingId === r._id}
+                    className="text-gray-300 text-xs hover:text-gray-600 hover:underline whitespace-nowrap disabled:opacity-50"
+                  >
+                    {r.hidden === 'true' ? 'הצג' : 'הסתר'}
+                  </button>
                 </div>
               </td>
             </tr>
@@ -313,6 +403,13 @@ export default function Tools() {
           historyCol={historyCol}
           toolsCol={toolsCol}
           employees={employees}
+        />
+      )}
+
+      {showAddDialog && (
+        <AddToolDialog
+          onClose={() => setShowAddDialog(false)}
+          onSave={handleAddTool}
         />
       )}
     </div>
