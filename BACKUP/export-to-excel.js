@@ -108,13 +108,13 @@ async function main() {
     }
   }
 
-  const exportsDir = join(__dirname, 'exports');
-  if (!existsSync(exportsDir)) mkdirSync(exportsDir);
+  const exportsDir = process.argv[2] || 'E:\\Downloads';
+  if (!existsSync(exportsDir)) mkdirSync(exportsDir, { recursive: true });
 
   const filename = `${todayStr()} Quality Assurance Backup.xlsx`;
   XLSX.writeFile(wb, join(exportsDir, filename));
 
-  console.log(`\nנשמר: exports\\${filename}`);
+  console.log(`\nנשמר: ${exportsDir}\\${filename}`);
 }
 
 main().catch(err => {
