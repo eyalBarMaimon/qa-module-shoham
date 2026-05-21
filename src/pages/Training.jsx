@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
@@ -12,6 +12,49 @@ const DEFAULT_TOPICS = [
 ];
 
 const DEFAULT_EMPLOYEES = ['סבטלנה מטבייב', 'דני שהם', 'איציק נוסם', 'אילנה הופמן', 'סגי ישראל'];
+
+function TrainerCell({ value, employees, onChange }) {
+  const [showList, setShowList] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setShowList(false); }
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <div className="flex gap-1">
+        <input
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder="שם מדריך"
+          className="w-full bg-transparent px-2 py-0.5 focus:outline-none focus:bg-blue-50 rounded text-sm border border-transparent focus:border-blue-300"
+        />
+        <button
+          type="button"
+          onClick={() => setShowList(s => !s)}
+          className="text-gray-400 hover:text-blue-600 px-1 text-xs"
+          title="בחר מרשימה"
+        >▼</button>
+      </div>
+      {showList && (
+        <div className="absolute top-full right-0 bg-white border border-gray-200 rounded shadow-lg z-20 min-w-[140px] py-1">
+          {employees.map(e => (
+            <button
+              key={e}
+              onClick={() => { onChange(e); setShowList(false); }}
+              className="block w-full text-right px-3 py-1.5 text-sm hover:bg-blue-50"
+            >
+              {e}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Training() {
   const trainingSheet = useCollection('Training');
@@ -29,35 +72,27 @@ export default function Training() {
   }, []);
 
   useEffect(() => {
-    if (employeesSheet.data.length > 0) {
-      setEmployees(employeesSheet.data.map(r => r['שם'] || Object.values(r)[0]).filter(Boolean));
-    }
+    if (employeesSheet.data.length > 0)
+      setEmployees(employeesSheet.data.map(r => r['שם'] || Object.values(r).find(v => v && v !== r._id)).filter(Boolean));
   }, [employeesSheet.data]);
 
   function updateTopic(i, field, val) {
     setTopics(prev => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
   }
 
-  function openDialog(i) {
-    setDialogTopic(i);
-    setTempSelected([...topics[i].משתתפים]);
-  }
-
-  function toggleEmployee(name) {
-    setTempSelected(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]);
-  }
-
-  function saveDialog() {
-    updateTopic(dialogTopic, 'משתתפים', tempSelected);
-    setDialogTopic(null);
-  }
+  function openDialog(i) { setDialogTopic(i); setTempSelected([...topics[i].משתתפים]); }
+  function toggleEmployee(name) { setTempSelected(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]); }
+  function saveDialog() { updateTopic(dialogTopic, 'משתתפים', tempSelected); setDialogTopic(null); }
 
   function addEmployee() {
     const name = newEmployee.trim();
-    if (name && !employees.includes(name)) {
-      setEmployees(prev => [...prev, name]);
-      setNewEmployee('');
-    }
+    if (name && !employees.includes(name)) { setEmployees(prev => [...prev, name]); setNewEmployee(''); }
+  }
+
+  function removeEmployee(name) {
+    setEmployees(prev => prev.filter(e => e !== name));
+    // Remove from any topic's משתתפים list too
+    setTopics(prev => prev.map(t => ({ ...t, משתתפים: t.משתתפים.filter(e => e !== name) })));
   }
 
   const exportCols = ['נושא', 'מסמכים', 'משתתפים', 'מדריך', 'תאריך', 'בוצע'];
@@ -69,9 +104,16 @@ export default function Training() {
       {/* Employees panel */}
       <div className="border border-gray-200 rounded p-3 mb-4 bg-gray-50">
         <div className="font-semibold text-sm mb-2">רשימת עובדים</div>
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div className="flex flex-wrap gap-2 mb-3">
           {employees.map(e => (
-            <span key={e} className="bg-white border border-gray-300 rounded px-2 py-0.5 text-sm">{e}</span>
+            <span key={e} className="inline-flex items-center gap-1 bg-white border border-gray-300 rounded px-2 py-0.5 text-sm">
+              {e}
+              <button
+                onClick={() => removeEmployee(e)}
+                className="text-gray-400 hover:text-red-500 leading-none text-xs font-bold"
+                title="הסר עובד"
+              >×</button>
+            </span>
           ))}
         </div>
         <div className="flex gap-2">
@@ -80,7 +122,7 @@ export default function Training() {
             onChange={e => setNewEmployee(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && addEmployee()}
             placeholder="הוסף עובד..."
-            className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none"
+            className="border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:border-blue-400"
           />
           <button onClick={addEmployee} className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700">הוסף</button>
         </div>
@@ -117,17 +159,19 @@ export default function Training() {
                 </div>
                 <button onClick={() => openDialog(i)} className="text-blue-600 text-xs hover:underline">בחר משתתפים</button>
               </td>
-              <td className="border border-[#999] px-1 py-1">
-                <input value={t.מדריך} onChange={e => updateTopic(i, 'מדריך', e.target.value)}
-                  className="w-full bg-transparent px-2 py-0.5 focus:outline-none focus:bg-blue-50 rounded text-sm" />
+              <td className="border border-[#999] px-1 py-1 min-w-[130px]">
+                <TrainerCell
+                  value={t.מדריך}
+                  employees={employees}
+                  onChange={val => updateTopic(i, 'מדריך', val)}
+                />
               </td>
               <td className="border border-[#999] px-1 py-1">
                 <input type="date" value={t.תאריך} onChange={e => updateTopic(i, 'תאריך', e.target.value)}
                   className="bg-transparent focus:outline-none focus:bg-blue-50 rounded text-sm" dir="ltr" />
               </td>
               <td className="border border-[#999] px-3 py-1.5 text-center">
-                <input type="checkbox" checked={t.בוצע} onChange={e => updateTopic(i, 'בוצע', e.target.checked)}
-                  className="w-4 h-4" />
+                <input type="checkbox" checked={t.בוצע} onChange={e => updateTopic(i, 'בוצע', e.target.checked)} className="w-4 h-4" />
               </td>
             </tr>
           ))}

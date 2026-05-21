@@ -1,92 +1,110 @@
 import { jsPDF } from 'jspdf';
+import logoUrl from '../assets/logo.jpeg';
 import { TAB_CHAPTERS, TAB_SUBJECTS, APP_VERSION } from './constants';
 import { todayFormatted } from './dateUtils';
 
 const STATUS_LABELS = { red: 'פג תוקף', amber: 'בקרוב', green: 'תקין', gray: 'לא פעיל' };
 
-export function exportTablePDF(tab, columns, rows) {
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const pageW = doc.internal.pageSize.getWidth();
-  const pageH = doc.internal.pageSize.getHeight();
-  const margin = 10;
-  const contentW = pageW - margin * 2;
+function cellLabel(val) {
+  return STATUS_LABELS[val] ?? String(val ?? '');
+}
 
-  // ---- Header ----
-  // Row 1: company name + version
-  doc.setFillColor(255, 255, 255);
-  doc.rect(margin, margin, contentW, 10, 'F');
-  doc.setDrawColor(153, 153, 153);
-  doc.rect(margin, margin, contentW, 10);
-  doc.setFontSize(10);
-  doc.setFont('helvetica', 'bold');
-  doc.text('M. Shoham Trading LTD. / Quality Assurance', pageW / 2, margin + 6.5, { align: 'center' });
-  doc.setFontSize(8);
-  doc.setFont('helvetica', 'normal');
-  doc.text(`v${APP_VERSION}`, pageW - margin - 2, margin + 6.5, { align: 'right' });
-
-  // Row 2: Chapter | Update | Rev
+export async function exportTablePDF(tab, columns, rows) {
   const chapter = TAB_CHAPTERS[tab] || '';
-  doc.setFillColor(255, 255, 255);
-  doc.rect(margin, margin + 10, contentW, 8, 'F');
-  doc.rect(margin, margin + 10, contentW, 8);
-  doc.setFontSize(7);
-  doc.text(`Chapter: ${chapter}`, margin + 2, margin + 15);
-  doc.text(`Update: ${todayFormatted()}`, pageW / 2, margin + 15, { align: 'center' });
-  doc.text('Rev. 02', pageW - margin - 2, margin + 15, { align: 'right' });
-
-  // Row 3: Subject
   const subject = TAB_SUBJECTS[tab] || '';
-  doc.setFillColor(217, 217, 217);
-  doc.rect(margin, margin + 18, contentW, 7, 'F');
-  doc.rect(margin, margin + 18, contentW, 7);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(8);
-  doc.text(`Subject: ${subject}`, margin + 2, margin + 23);
+  const today   = todayFormatted();
 
-  // ---- Table ----
-  const tableTop = margin + 28;
-  const colW = contentW / columns.length;
-  const rowH = 7;
+  // ── Build printable HTML ───────────────────────────────────────────────────
+  const colWidthPct = (100 / columns.length).toFixed(2) + '%';
 
-  // Header row
-  doc.setFillColor(217, 217, 217);
-  doc.rect(margin, tableTop, contentW, rowH, 'F');
-  doc.setDrawColor(153, 153, 153);
-  doc.rect(margin, tableTop, contentW, rowH);
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(7);
-  columns.forEach((col, j) => {
-    doc.rect(margin + j * colW, tableTop, colW, rowH);
-    doc.text(col, margin + j * colW + colW / 2, tableTop + rowH - 2, { align: 'center' });
-  });
+  const headerRows = columns
+    .map(c => `<th style="border:1px solid #999;padding:4px 6px;text-align:center;background:#D9D9D9;font-weight:bold;">${c}</th>`)
+    .join('');
 
-  // Data rows
-  doc.setFont('helvetica', 'normal');
-  let y = tableTop + rowH;
-  rows.forEach((row, i) => {
-    if (y + rowH > pageH - 15) {
-      doc.addPage();
-      y = margin;
-    }
-    doc.setFillColor(i % 2 === 0 ? 255 : 250, i % 2 === 0 ? 255 : 250, i % 2 === 0 ? 255 : 250);
-    doc.rect(margin, y, contentW, rowH, 'F');
-    doc.setDrawColor(153, 153, 153);
-    doc.rect(margin, y, contentW, rowH);
-    row.forEach((cell, j) => {
-      doc.rect(margin + j * colW, y, colW, rowH);
-      const label = STATUS_LABELS[cell] || String(cell ?? '');
-      const text = doc.splitTextToSize(label, colW - 2);
-      doc.text(text[0] || '', margin + j * colW + colW / 2, y + rowH - 2, { align: 'center' });
+  const dataRows = rows.map((row, i) => {
+    const bg = i % 2 === 0 ? '#fff' : '#fafafa';
+    const cells = row
+      .map(c => `<td style="border:1px solid #999;padding:3px 5px;text-align:center;">${cellLabel(c)}</td>`)
+      .join('');
+    return `<tr style="background:${bg};">${cells}</tr>`;
+  }).join('');
+
+  const html = `
+    <div id="__pdf_export__" style="
+      font-family:Arial,Helvetica,sans-serif;
+      direction:rtl;
+      width:1050px;
+      font-size:11px;
+      color:#000;
+      background:#fff;
+      padding:10px;
+    ">
+      <!-- Doc header -->
+      <table style="width:100%;border-collapse:collapse;border:1px solid #999;margin-bottom:2px;">
+        <tr>
+          <td style="width:90px;text-align:center;border-left:1px solid #999;padding:4px 6px;">
+            <img src="${logoUrl}" style="height:38px;object-fit:contain;" />
+          </td>
+          <td style="text-align:center;font-weight:bold;font-size:13px;padding:4px;">
+            M. Shoham Trading LTD. / Quality Assurance
+          </td>
+          <td style="width:55px;text-align:center;font-size:9px;padding:4px;border-right:1px solid #999;">
+            v${APP_VERSION}
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #999;">
+          <td colspan="3" style="padding:3px 8px;font-size:10px;">
+            <span style="margin-left:30px;">Chapter: ${chapter}</span>
+            <span style="margin-left:30px;">Update: ${today}</span>
+            <span>Rev. 02</span>
+          </td>
+        </tr>
+        <tr style="border-top:1px solid #999;background:#D9D9D9;">
+          <td colspan="3" style="padding:3px 8px;font-weight:bold;font-size:11px;">
+            Subject: ${subject}
+          </td>
+        </tr>
+      </table>
+
+      <!-- Data table -->
+      <table style="width:100%;border-collapse:collapse;border:1px solid #999;">
+        <thead><tr>${headerRows}</tr></thead>
+        <tbody>${dataRows}</tbody>
+      </table>
+
+      <!-- Footer -->
+      <div style="text-align:center;font-size:9px;color:#555;margin-top:6px;border-top:1px solid #ccc;padding-top:4px;">
+        QA Manager: Ilana Hofman &nbsp;|&nbsp; QC Manager: Sveta Matveev &nbsp;|&nbsp; v${APP_VERSION} &nbsp;|&nbsp; M. Shoham Trading LTD.
+      </div>
+    </div>`;
+
+  // ── Inject into DOM temporarily ───────────────────────────────────────────
+  const wrapper = document.createElement('div');
+  wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;';
+  wrapper.innerHTML = html;
+  document.body.appendChild(wrapper);
+
+  // Wait for logo image to load
+  const img = wrapper.querySelector('img');
+  if (img && !img.complete) {
+    await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
+  }
+
+  // ── Render with jsPDF ─────────────────────────────────────────────────────
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+  await new Promise(resolve => {
+    doc.html(wrapper.querySelector('#__pdf_export__'), {
+      callback: (d) => {
+        document.body.removeChild(wrapper);
+        const fileDate = today.replace(/\//g, '-');
+        d.save(`Shoham_${tab}_${fileDate}.pdf`);
+        resolve();
+      },
+      margin:    [8, 8, 8, 8],
+      autoPaging: 'text',
+      width:      281,
+      windowWidth: 1050,
     });
-    y += rowH;
   });
-
-  // Footer
-  doc.setFontSize(6);
-  doc.setFont('helvetica', 'normal');
-  doc.text('QA Manager: Ilana Hofman  |  QC Manager: Sveta Matveev  |  M. Shoham Trading LTD.', pageW / 2, pageH - 5, { align: 'center' });
-
-  // Save
-  const today = todayFormatted().replace(/\//g, '-');
-  doc.save(`Shoham_${tab}_${today}.pdf`);
 }
