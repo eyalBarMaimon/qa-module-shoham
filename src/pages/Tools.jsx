@@ -6,7 +6,7 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
-import { buildFileName, uploadCalibrationFile } from '../utils/fileUpload';
+import { buildFileName, uploadScanedDoc } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
 
 // ── Edit tool dialog ──────────────────────────────────────────────────────────
@@ -206,7 +206,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
       setUploadError('');
       if (attachedFile && computedFileName) {
         try {
-          fileUrl = await uploadCalibrationFile(attachedFile, 'tools', tool['שם המכשיר'], computedFileName);
+          fileUrl = await uploadScanedDoc(attachedFile, 'tools', tool['שם המכשיר'], computedFileName);
           fileName = computedFileName;
         } catch (err) {
           setUploadError(err.message || 'העלאת הקובץ נכשלה — הרשומה נשמרה ללא קובץ');

@@ -1,14 +1,13 @@
 @echo off
 cd /d "%~dp0"
 
-:: Change this path to set where the Excel file is saved
+:: Change these to configure the backup
 SET SAVE_PATH=E:\Downloads
+SET GITHUB_REPO=eyalBarMaimon/qa-module-shoham
 
-echo Exporting data from Firebase to Excel...
+echo Starting QA Backup...
 echo.
-node export-to-excel.js "%SAVE_PATH%"
-echo.
-echo File saved to: %SAVE_PATH%
+node export-to-excel.js "%SAVE_PATH%" "%GITHUB_REPO%"
 echo.
 echo Press any key to close...
 pause >nul

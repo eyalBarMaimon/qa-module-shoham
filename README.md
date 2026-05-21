@@ -7,19 +7,19 @@
 ## Stack
 - React + Vite + Tailwind CSS
 - Firebase Firestore (DB)
-- GitHub API — אחסון קבצי כיול (repo: `qa-calibrations`)
+- GitHub API — אחסון מסמכים סרוקים (repo: `qa-module-shoham`, נתיב: `Scanned_Doc/`)
 - GitHub Pages + GitHub Actions (hosting & deploy)
 - html2canvas + jsPDF (PDF export)
 
-## אחסון קבצים (כיולים)
+## אחסון מסמכים סרוקים (Scaned Doc)
 
-קבצי כיול (PDF / JPG) נשמרים ב-GitHub במאגר ציבורי ייעודי:
+קבצים (PDF / JPG) נשמרים ב-GitHub בתוך ה-repo הראשי של האפליקציה:
 
-**https://github.com/eyalBarMaimon/qa-calibrations**
+**https://github.com/eyalBarMaimon/qa-module-shoham**
 
 מבנה התיקיות:
 ```
-calibrations/
+Scanned_Doc/
   └── {קטגוריה}/
         └── {שם_מכשיר}/
               └── YYYYMMDD_מספרסידורי.pdf
@@ -27,7 +27,7 @@ calibrations/
 
 כתובת גישה ישירה לקובץ:
 ```
-https://raw.githubusercontent.com/eyalBarMaimon/qa-calibrations/main/calibrations/...
+https://raw.githubusercontent.com/eyalBarMaimon/qa-module-shoham/main/Scanned_Doc/...
 ```
 
 האחסון **חינמי לחלוטין** — GitHub משמש כ-CDN ציבורי.
