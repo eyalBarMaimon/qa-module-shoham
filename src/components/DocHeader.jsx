@@ -11,7 +11,7 @@ export default function DocHeader({ tab }) {
       {/* Row 1 */}
       <div className="flex items-center border-b border-[#999] bg-white">
         <div className="w-32 p-2 border-l border-[#999] flex items-center justify-center">
-          <img src={logo} alt="M. Shoham" className="h-16 object-contain" />
+          <img src={logo} alt="M. Shoham" className="h-24 object-contain" />
         </div>
         <div className="flex-1 text-center font-bold py-2 text-lg">
           Quality Assurance
