@@ -146,10 +146,10 @@ export default function Lamps() {
       {lampsCol.loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
       {lampsCol.error && <div className="text-red-500 text-sm mb-3">{lampsCol.error}</div>}
       <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+      <table className="w-full min-w-[700px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {COLS.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
+            {COLS.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold whitespace-nowrap">{c}</th>)}
             <th className="border border-[#999] px-2 py-2">פעולות</th>
           </tr>
         </thead>
