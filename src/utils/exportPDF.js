@@ -61,7 +61,7 @@ export async function exportTablePDF(tab, columns, rows) {
         </tr>
         <tr style="border-top:1px solid #999;background:#D9D9D9;">
           <td colspan="3" style="padding:3px 8px;font-weight:bold;font-size:11px;">
-            Subject: ${subject}
+            ${subject}
           </td>
         </tr>
       </table>

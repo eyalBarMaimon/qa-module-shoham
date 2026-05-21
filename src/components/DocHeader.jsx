@@ -25,7 +25,7 @@ export default function DocHeader({ tab }) {
       </div>
       {/* Row 3 */}
       <div className="bg-[#D9D9D9] p-1.5 text-xs font-semibold">
-        Subject: {subject}
+        {subject}
       </div>
     </div>
   );
