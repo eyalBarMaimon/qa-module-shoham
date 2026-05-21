@@ -7,6 +7,7 @@ import { calcStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadCalibrationFile } from '../utils/fileUpload';
+import FileDropZone from '../components/FileDropZone';
 
 // ── Add tool dialog ───────────────────────────────────────────────────────────
 function AddToolDialog({ onClose, onSave }) {
@@ -102,7 +103,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   const [saving, setSaving] = useState(false);
   const [showList, setShowList] = useState(false);
   const [attachedFile, setAttachedFile] = useState(null);
-  const fileInputRef = useRef(null);
+  const [fileResetKey, setFileResetKey] = useState(0);
   const dropRef = useRef(null);
 
   const computedFileName = useMemo(() => {
@@ -179,7 +180,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
     setNextMode('date');
     setNaMode(false);
     setAttachedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
+    setFileResetKey(k => k + 1);
     setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
   }
 
@@ -262,19 +263,11 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
             </div>
           </div>
           <div className="mt-3">
-            <label className="text-xs text-gray-500 block mb-1">צרף מסמך כיול (PDF / JPG)</label>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".pdf,.jpg,.jpeg"
-              onChange={e => setAttachedFile(e.target.files[0] || null)}
-              className="text-sm text-gray-500 file:ml-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+            <FileDropZone
+              key={fileResetKey}
+              onFile={setAttachedFile}
+              computedFileName={computedFileName}
             />
-            {computedFileName && (
-              <div className="text-xs text-gray-500 mt-1">
-                שם קובץ: <span className="font-mono text-gray-700">{computedFileName}</span>
-              </div>
-            )}
           </div>
           <button onClick={handleSave} disabled={saving || (!naMode && !form.תאריך)}
             className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
