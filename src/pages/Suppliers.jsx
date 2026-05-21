@@ -263,7 +263,7 @@ export default function Suppliers() {
           <option value="red">פג תוקף</option>
           <option value="amber">בקרוב</option>
           <option value="green">תקין</option>
-          <option value="gray">ללא תעודה</option>
+          <option value="gray">לא פעיל</option>
         </select>
         <button
           onClick={() => setShowAddDialog(true)}

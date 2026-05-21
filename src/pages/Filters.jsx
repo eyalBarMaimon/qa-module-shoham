@@ -179,6 +179,7 @@ export default function Filters() {
   const filtersCol = useSheets('Filters');
   const historyCol = useSheets('FiltersHistory');
   const [activeFilter, setActiveFilter] = useState(null);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
     filtersCol.fetchSheet();
@@ -189,9 +190,11 @@ export default function Filters() {
     [...new Set(filtersCol.data.map(r => r['תדירות']).filter(Boolean))].sort(),
     [filtersCol.data]);
 
-  const filtered = useMemo(() =>
-    filtersCol.data.map(r => ({ ...r, _status: calcFilterStatus(r['תאריך אחרון'], r['תדירות']) })),
-    [filtersCol.data]);
+  const filtered = useMemo(() => {
+    const withStatus = filtersCol.data.map(r => ({ ...r, _status: calcFilterStatus(r['תאריך אחרון'], r['תדירות']) }));
+    if (filterStatus === 'all') return withStatus;
+    return withStatus.filter(r => r._status === filterStatus);
+  }, [filtersCol.data, filterStatus]);
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
@@ -200,10 +203,21 @@ export default function Filters() {
   return (
     <div>
       <DocHeader tab="filters" />
-      <div className="flex justify-end mb-3">
+      <div className="flex flex-wrap gap-2 mb-3 items-center">
+        <select
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+          className="border border-gray-300 rounded px-3 py-1.5 text-sm focus:outline-none"
+        >
+          <option value="all">כל הסטטוסים</option>
+          <option value="red">פג תוקף</option>
+          <option value="amber">בקרוב</option>
+          <option value="green">תקין</option>
+          <option value="gray">לא פעיל</option>
+        </select>
         <button
           onClick={() => exportTablePDF('filters', cols, rows.map(r => cols.map(c => c === 'סטטוס' ? r._status : (r[c] ?? ''))))}
-          className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
+          className="mr-auto bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
         >
           ייצוא PDF
         </button>
