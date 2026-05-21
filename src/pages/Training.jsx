@@ -167,8 +167,6 @@ export default function Training() {
     ? sortedHistory
     : sortedHistory.filter(r => r.נושא === filterTopic);
 
-  const exportCols = ['נושא', 'מסמכים', 'משתתפים', 'מדריך', 'תאריך', 'בוצע'];
-
   return (
     <div>
       <DocHeader tab="training" />
@@ -218,18 +216,12 @@ export default function Training() {
             </div>
           </div>
 
-          <div className="flex justify-between mb-3">
+          <div className="flex mb-3">
             <button
               onClick={() => setAddingTopic(true)}
               className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700"
             >
               + הוסף נושא
-            </button>
-            <button
-              onClick={() => exportTablePDF('training', exportCols, topics.map(t => [t.נושא, t.מסמכים, t.משתתפים.join(', '), t.מדריך, t.תאריך, t.בוצע ? '✓' : '']))}
-              className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
-            >
-              ייצוא PDF
             </button>
           </div>
 
