@@ -22,7 +22,7 @@ function toDisplay(iso) {
 
 // ── Add supplier dialog ───────────────────────────────────────────────────────
 function AddSupplierDialog({ onClose, onSave }) {
-  const [form, setForm] = useState({ 'שם ספק': '', 'תעודת ISO': '', 'תוקף עד': '', 'הערות': '' });
+  const [form, setForm] = useState({ 'שם ספק': '', 'סוג הסמכה': '', 'תוקף עד': '', 'הערות': '' });
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
@@ -47,8 +47,8 @@ function AddSupplierDialog({ onClose, onSave }) {
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full" />
           </div>
           <div>
-            <label className="text-xs text-gray-500 block mb-1">תעודת ISO</label>
-            <input value={form['תעודת ISO']} onChange={e => setForm(f => ({ ...f, 'תעודת ISO': e.target.value }))}
+            <label className="text-xs text-gray-500 block mb-1">סוג הסמכה</label>
+            <input value={form['סוג הסמכה']} onChange={e => setForm(f => ({ ...f, 'סוג הסמכה': e.target.value }))}
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full" />
           </div>
           <div>
@@ -139,7 +139,7 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div>
             <div className="font-bold text-base">{supplier['שם ספק']}</div>
-            <div className="text-xs text-gray-500">תעודת ISO: {supplier['תעודת ISO'] || '—'}</div>
+            <div className="text-xs text-gray-500">סוג הסמכה: {supplier['סוג הסמכה'] || supplier['תעודת ISO'] || '—'}</div>
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
         </div>
@@ -227,7 +227,11 @@ export default function Suppliers() {
 
   const filtered = useMemo(() =>
     suppliersCol.data
-      .map(r => ({ ...r, _status: calcStatus(r['תוקף עד'], 'suppliers') }))
+      .map(r => ({
+        ...r,
+        'סוג הסמכה': r['סוג הסמכה'] || r['תעודת ISO'] || '',
+        _status: calcStatus(r['תוקף עד'], 'suppliers'),
+      }))
       .filter(r => {
         const q = search.toLowerCase();
         const matchSearch = !q || (r['שם ספק'] || '').toLowerCase().includes(q);
@@ -238,7 +242,7 @@ export default function Suppliers() {
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
-  const cols = ['#', 'שם ספק', 'תעודת ISO', 'תוקף עד', 'הערות', 'סטטוס'];
+  const cols = ['#', 'שם ספק', 'סוג הסמכה', 'תוקף עד', 'הערות', 'סטטוס'];
 
   return (
     <div>
@@ -281,7 +285,7 @@ export default function Suppliers() {
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"          label="#"          sort={sort} onSort={toggleSort} />
             <SortableHeader col="שם ספק"    label="שם ספק"    sort={sort} onSort={toggleSort} />
-            <SortableHeader col="תעודת ISO"  label="תעודת ISO"  sort={sort} onSort={toggleSort} />
+            <SortableHeader col="סוג הסמכה"  label="סוג הסמכה"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="תוקף עד"   label="תוקף עד"   sort={sort} onSort={toggleSort} />
             <SortableHeader col="הערות"      label="הערות"      sort={sort} onSort={toggleSort} />
             <SortableHeader col="_status"    label="סטטוס"      sort={sort} onSort={toggleSort} />
@@ -293,7 +297,7 @@ export default function Suppliers() {
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם ספק']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['תעודת ISO']}</td>
+              <td className="border border-[#999] px-3 py-1.5">{r['סוג הסמכה']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תוקף עד']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['הערות']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
