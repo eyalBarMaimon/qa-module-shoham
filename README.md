@@ -7,8 +7,30 @@
 ## Stack
 - React + Vite + Tailwind CSS
 - Firebase Firestore (DB)
+- GitHub API — אחסון קבצי כיול (repo: `qa-calibrations`)
 - GitHub Pages + GitHub Actions (hosting & deploy)
 - html2canvas + jsPDF (PDF export)
+
+## אחסון קבצים (כיולים)
+
+קבצי כיול (PDF / JPG) נשמרים ב-GitHub במאגר ציבורי ייעודי:
+
+**https://github.com/eyalBarMaimon/qa-calibrations**
+
+מבנה התיקיות:
+```
+calibrations/
+  └── {קטגוריה}/
+        └── {שם_מכשיר}/
+              └── YYYYMMDD_מספרסידורי.pdf
+```
+
+כתובת גישה ישירה לקובץ:
+```
+https://raw.githubusercontent.com/eyalBarMaimon/qa-calibrations/main/calibrations/...
+```
+
+האחסון **חינמי לחלוטין** — GitHub משמש כ-CDN ציבורי.
 
 ## מודולים
 | מודול | תיאור |
