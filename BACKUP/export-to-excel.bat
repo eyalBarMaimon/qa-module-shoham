@@ -1,14 +1,14 @@
 @echo off
 cd /d "%~dp0"
 
-:: ניתן לשנות את הנתיב כאן בלבד
+:: Change this path to set where the Excel file is saved
 SET SAVE_PATH=E:\Downloads
 
-echo מייצא נתונים מ-Firebase לאקסל...
+echo Exporting data from Firebase to Excel...
 echo.
 node export-to-excel.js "%SAVE_PATH%"
 echo.
-echo הקובץ נשמר ב:
-echo %SAVE_PATH%
+echo File saved to: %SAVE_PATH%
 echo.
-pause
+echo Press any key to close...
+pause >nul

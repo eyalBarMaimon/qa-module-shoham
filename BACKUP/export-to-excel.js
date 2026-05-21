@@ -8,16 +8,14 @@ import * as XLSX from 'xlsx';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 function loadEnv() {
-  // חפש .env.local בתיקייה הזו
   const localPath = join(__dirname, '.env.local');
   if (existsSync(localPath)) return parseEnv(localPath);
 
-  // fallback: תיקיית הפרויקט (רמה מעל)
   const parentPath = join(__dirname, '..', '.env.local');
   if (existsSync(parentPath)) return parseEnv(parentPath);
 
-  console.error('ERROR: לא נמצא קובץ .env.local');
-  console.error('העתק את .env.local לתוך תיקיית BACKUP');
+  console.error('ERROR: .env.local file not found.');
+  console.error('Copy .env.local into the BACKUP folder and try again.');
   process.exit(1);
 }
 
@@ -68,7 +66,7 @@ function todayStr() {
 }
 
 async function main() {
-  console.log('=== ייצוא נתונים ל-Excel ===\n');
+  console.log('=== Quality Assurance Backup - Excel Export ===\n');
 
   const env = loadEnv();
 
@@ -85,14 +83,14 @@ async function main() {
   const wb = XLSX.utils.book_new();
 
   for (const col of COLLECTIONS) {
-    process.stdout.write(`מושך ${col.id}... `);
+    process.stdout.write(`Fetching ${col.id}... `);
     try {
       const snap = await getDocs(collection(db, col.id));
       const rows = snap.docs.map(d => cleanDoc(d.data()));
 
       const ws = rows.length > 0
         ? XLSX.utils.json_to_sheet(rows, { cellDates: true })
-        : XLSX.utils.aoa_to_sheet([['אין נתונים']]);
+        : XLSX.utils.aoa_to_sheet([['No data']]);
 
       if (rows.length > 0) {
         const cols = Object.keys(rows[0]);
@@ -102,9 +100,9 @@ async function main() {
       }
 
       XLSX.utils.book_append_sheet(wb, ws, col.sheet);
-      console.log(rows.length > 0 ? `${rows.length} רשומות` : '(ריק)');
+      console.log(rows.length > 0 ? `${rows.length} rows` : '(empty)');
     } catch (err) {
-      console.log(`שגיאה: ${err.message}`);
+      console.log(`Error: ${err.message}`);
     }
   }
 
@@ -114,10 +112,10 @@ async function main() {
   const filename = `${todayStr()} Quality Assurance Backup.xlsx`;
   XLSX.writeFile(wb, join(exportsDir, filename));
 
-  console.log(`\nנשמר: ${exportsDir}\\${filename}`);
+  console.log(`\nSaved: ${exportsDir}\\${filename}`);
 }
 
 main().catch(err => {
-  console.error('\nשגיאה:', err.message);
+  console.error('\nExport failed:', err.message);
   process.exit(1);
 });
