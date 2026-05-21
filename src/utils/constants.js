@@ -5,7 +5,7 @@ export const STATUS_THRESHOLDS = {
   filters: 90,
 };
 
-export const INACTIVE_VALUES = ['לא בשימוש', 'לא נדרש כיול', 'לא נדרש', 'NA', '-', ''];
+export const INACTIVE_VALUES = ['לא בשימוש', 'לא נדרש כיול', 'לא נדרש', 'לא נדרש פילטר', 'NA', '-', ''];
 
 export const TAB_CHAPTERS = {
   dashboard: 'QA Module',

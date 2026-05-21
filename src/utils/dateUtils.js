@@ -1,11 +1,18 @@
-// Parse DD/MM/YYYY or YYYY-MM-DD → Date object
+// Parse DD/MM/YYYY, MM/YYYY, or YYYY-MM-DD → Date object
 export function parseDate(str) {
   if (!str || typeof str !== 'string') return null;
   const s = str.trim();
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) {
+  // DD/MM/YYYY
+  if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
     const [d, m, y] = s.split('/');
     return new Date(+y, +m - 1, +d);
   }
+  // MM/YYYY (no day — treat as 1st of month)
+  if (/^\d{1,2}\/\d{4}$/.test(s)) {
+    const [m, y] = s.split('/');
+    return new Date(+y, +m - 1, 1);
+  }
+  // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
     const [y, m, d] = s.split('-');
     return new Date(+y, +m - 1, +d);
