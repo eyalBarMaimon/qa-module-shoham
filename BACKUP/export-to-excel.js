@@ -32,28 +32,30 @@ function parseEnv(path) {
 }
 
 const COLLECTIONS = [
-  { id: 'Tools',            sheet: 'כלי מדידה' },
-  { id: 'ToolsHistory',     sheet: 'היסטוריה - כלי מדידה' },
-  { id: 'Machines',         sheet: 'מכונות' },
-  { id: 'MachinesHistory',  sheet: 'היסטוריה - מכונות' },
-  { id: 'Filters',          sheet: 'פילטרים' },
-  { id: 'FiltersHistory',   sheet: 'היסטוריה - פילטרים' },
-  { id: 'Lamps',            sheet: 'מנורות' },
-  { id: 'LampsHistory',     sheet: 'היסטוריה - מנורות' },
-  { id: 'Suppliers',        sheet: 'ספקים' },
-  { id: 'SuppliersHistory', sheet: 'היסטוריה - ספקים' },
-  { id: 'Training',         sheet: 'הדרכות' },
-  { id: 'TrainingHistory',  sheet: 'היסטוריה - הדרכות' },
-  { id: 'Employees',        sheet: 'עובדים' },
+  { id: 'Tools',            sheet: 'כלי מדידה',            cols: ['#','שם המכשיר','מספר סידורי','תחום מדידה','תאריך בדיקה','מועד הבא','מיקום'] },
+  { id: 'ToolsHistory',     sheet: 'היסטוריה - כלי מדידה', cols: null },
+  { id: 'Machines',         sheet: 'מכונות',               cols: ['מ. מכונה','שם','יצרן','מיקום','תאריך כיול','מועד הבא'] },
+  { id: 'MachinesHistory',  sheet: 'היסטוריה - מכונות',    cols: null },
+  { id: 'Filters',          sheet: 'פילטרים',              cols: ['מ. פילטר','מכונה','מ. מכונה','מיקום','תדירות','תאריך אחרון'] },
+  { id: 'FiltersHistory',   sheet: 'היסטוריה - פילטרים',   cols: null },
+  { id: 'Lamps',            sheet: 'מנורות',               cols: ['שם המכונה','מ. סידורי מכונה','סוג מנורה','תאריך החלפה','כמות פולסים','הערות'] },
+  { id: 'LampsHistory',     sheet: 'היסטוריה - מנורות',    cols: null },
+  { id: 'Suppliers',        sheet: 'ספקים',                cols: ['#','שם ספק','סוג הסמכה','תוקף עד','הערות'] },
+  { id: 'SuppliersHistory', sheet: 'היסטוריה - ספקים',     cols: null },
+  { id: 'Training',         sheet: 'הדרכות',               cols: ['נושא','מסמכים'] },
+  { id: 'TrainingHistory',  sheet: 'היסטוריה - הדרכות',    cols: ['נושא','מסמכים','משתתפים','מדריך','תאריך'] },
+  { id: 'Employees',        sheet: 'עובדים',               cols: null },
 ];
 
 function cleanDoc(data) {
   const { _status, ...rest } = data;
   return Object.fromEntries(
-    Object.entries(rest).map(([k, v]) => [
-      k,
-      Array.isArray(v) ? v.join(', ') : v ?? '',
-    ])
+    Object.entries(rest).map(([k, v]) => {
+      if (Array.isArray(v)) return [k, v.join(', ')];
+      if (v && typeof v === 'object' && typeof v.toDate === 'function')
+        return [k, v.toDate().toLocaleDateString('en-GB')]; // Firestore Timestamp → DD/MM/YYYY
+      return [k, v ?? ''];
+    })
   );
 }
 
@@ -86,15 +88,20 @@ async function main() {
     process.stdout.write(`Fetching ${col.id}... `);
     try {
       const snap = await getDocs(collection(db, col.id));
-      const rows = snap.docs.map(d => cleanDoc(d.data()));
+      const rawRows = snap.docs.map(d => cleanDoc(d.data()));
+
+      // enforce column order when defined; fill missing fields with ''
+      const rows = col.cols && rawRows.length > 0
+        ? rawRows.map(row => Object.fromEntries(col.cols.map(c => [c, row[c] ?? ''])))
+        : rawRows;
 
       const ws = rows.length > 0
         ? XLSX.utils.json_to_sheet(rows, { cellDates: true })
         : XLSX.utils.aoa_to_sheet([['No data']]);
 
-      if (rows.length > 0) {
-        const cols = Object.keys(rows[0]);
-        ws['!cols'] = cols.map(key => ({
+      const colKeys = rows.length > 0 ? Object.keys(rows[0]) : [];
+      if (colKeys.length > 0) {
+        ws['!cols'] = colKeys.map(key => ({
           wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2,
         }));
       }
@@ -113,6 +120,7 @@ async function main() {
   XLSX.writeFile(wb, join(exportsDir, filename));
 
   console.log(`\nSaved: ${exportsDir}\\${filename}`);
+  process.exit(0);
 }
 
 main().catch(err => {
