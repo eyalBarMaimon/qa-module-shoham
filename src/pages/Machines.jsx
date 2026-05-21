@@ -20,6 +20,61 @@ function toDisplay(iso) {
   return `${d}/${m}/${y}`;
 }
 
+// ── Add machine dialog ────────────────────────────────────────────────────────
+function AddMachineDialog({ onClose, onSave }) {
+  const [form, setForm] = useState({
+    'מ. מכונה': '', 'שם': '', 'יצרן': '', 'מיקום': '', 'תאריך כיול': '', 'מועד הבא': '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!form['שם'].trim()) return;
+    setSaving(true);
+    await onSave({
+      ...form,
+      'תאריך כיול': toDisplay(form['תאריך כיול']),
+      'מועד הבא':   toDisplay(form['מועד הבא']),
+    });
+    setSaving(false);
+    onClose();
+  }
+
+  const field = (label, key, type = 'text', dir = 'rtl') => (
+    <div>
+      <label className="text-xs text-gray-500 block mb-1">{label}</label>
+      <input type={type} value={form[key]} dir={dir}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full" />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl">
+        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+          <div className="font-bold text-base">הוספת מערכת חדשה</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <div className="px-5 py-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2">{field('שם המערכת *', 'שם')}</div>
+          {field('מ. מכונה', 'מ. מכונה')}
+          {field('יצרן', 'יצרן')}
+          {field('תאריך כיול', 'תאריך כיול', 'date', 'ltr')}
+          {field('מועד הבא', 'מועד הבא', 'date', 'ltr')}
+          <div className="col-span-2">{field('מיקום', 'מיקום')}</div>
+        </div>
+        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">ביטול</button>
+          <button onClick={handleSave} disabled={saving || !form['שם'].trim()}
+            className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700 disabled:opacity-50">
+            {saving ? 'שומר...' : 'הוסף מערכת'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Machine calibration dialog ─────────────────────────────────────────────────
 function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
   const history = useMemo(() => {
@@ -175,11 +230,22 @@ export default function Machines() {
   const historyCol  = useSheets('MachinesHistory');
   const [filterStatus, setFilterStatus] = useState('all');
   const [activeMachine, setActiveMachine] = useState(null);
+  const [showAddDialog, setShowAddDialog] = useState(false);
 
   useEffect(() => {
     machinesCol.fetchSheet();
     historyCol.fetchSheet();
   }, []);
+
+  async function handleAddMachine(data) {
+    await machinesCol.appendRow(data);
+    await machinesCol.fetchSheet();
+  }
+
+  async function handleDeactivate(row) {
+    machinesCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
+    await machinesCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+  }
 
   const filtered = useMemo(() =>
     machinesCol.data
@@ -206,6 +272,12 @@ export default function Machines() {
           <option value="green">תקין</option>
           <option value="gray">לא פעיל</option>
         </select>
+        <button
+          onClick={() => setShowAddDialog(true)}
+          className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700"
+        >
+          + הוסף מערכת
+        </button>
         <button
           onClick={() => exportTablePDF('machines', cols, rows.map(r => cols.map(c => c === 'סטטוס' ? r._status : (r[c] ?? ''))))}
           className="mr-auto bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
@@ -239,12 +311,25 @@ export default function Machines() {
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
-                <button
-                  onClick={() => setActiveMachine(r)}
-                  className="text-blue-600 text-xs hover:underline whitespace-nowrap"
-                >
-                  עדכן / היסטוריה
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => setActiveMachine(r)}
+                    className="text-blue-600 text-xs hover:underline whitespace-nowrap"
+                  >
+                    עדכן / היסטוריה
+                  </button>
+                  {r._status === 'gray' ? (
+                    <button onClick={() => setActiveMachine(r)}
+                      className="text-green-700 text-xs hover:underline whitespace-nowrap">
+                      הפעל
+                    </button>
+                  ) : (
+                    <button onClick={() => handleDeactivate(r)}
+                      className="text-gray-400 text-xs hover:text-red-500 hover:underline whitespace-nowrap">
+                      השבת
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}
@@ -260,6 +345,13 @@ export default function Machines() {
           onClose={() => setActiveMachine(null)}
           historyCol={historyCol}
           machinesCol={machinesCol}
+        />
+      )}
+
+      {showAddDialog && (
+        <AddMachineDialog
+          onClose={() => setShowAddDialog(false)}
+          onSave={handleAddMachine}
         />
       )}
     </div>
