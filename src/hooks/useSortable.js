@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { parseDate } from '../utils/dateUtils';
 
 const DATE_FIELDS = ['תאריך בדיקה', 'מועד הבא', 'תאריך כיול', 'תאריך אחרון', 'תוקף עד'];
+const STATUS_ORDER = { red: 0, amber: 1, green: 2, gray: 3 };
 
 export function useSortable(rows) {
   const [sort, setSort] = useState({ col: null, dir: 'asc' });
@@ -20,7 +21,10 @@ export function useSortable(rows) {
       const va = a[sort.col] ?? '';
       const vb = b[sort.col] ?? '';
       let cmp;
-      if (DATE_FIELDS.includes(sort.col)) {
+      if (sort.col === '_status') {
+        const oa = STATUS_ORDER[va] ?? 4, ob = STATUS_ORDER[vb] ?? 4;
+        cmp = oa - ob;
+      } else if (DATE_FIELDS.includes(sort.col)) {
         const da = parseDate(String(va));
         const db = parseDate(String(vb));
         if (!da && !db) cmp = 0;

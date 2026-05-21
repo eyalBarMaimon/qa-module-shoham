@@ -68,12 +68,12 @@ export default function Suppliers() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            <th className="border border-[#999] px-3 py-2 font-bold">#</th>
+            <SortableHeader col="#"          label="#"          sort={sort} onSort={toggleSort} />
             <SortableHeader col="שם ספק"    label="שם ספק"    sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">תעודת ISO</th>
+            <SortableHeader col="תעודת ISO"  label="תעודת ISO"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="תוקף עד"   label="תוקף עד"   sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">הערות</th>
-            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
+            <SortableHeader col="הערות"      label="הערות"      sort={sort} onSort={toggleSort} />
+            <SortableHeader col="_status"    label="סטטוס"      sort={sort} onSort={toggleSort} />
           </tr>
         </thead>
         <tbody>

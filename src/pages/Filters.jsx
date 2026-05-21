@@ -42,13 +42,13 @@ export default function Filters() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            <th className="border border-[#999] px-3 py-2 font-bold">מ. פילטר</th>
-            <SortableHeader col="מכונה"        label="מכונה"        sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">מ. מכונה</th>
-            <SortableHeader col="מיקום"        label="מיקום"        sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">תדירות</th>
-            <SortableHeader col="תאריך אחרון"  label="תאריך אחרון"  sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
+            <SortableHeader col="מ. פילטר"     label="מ. פילטר"     sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מכונה"         label="מכונה"         sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מ. מכונה"     label="מ. מכונה"     sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
+            <SortableHeader col="תדירות"        label="תדירות"        sort={sort} onSort={toggleSort} />
+            <SortableHeader col="תאריך אחרון"   label="תאריך אחרון"   sort={sort} onSort={toggleSort} />
+            <SortableHeader col="_status"       label="סטטוס"         sort={sort} onSort={toggleSort} />
           </tr>
         </thead>
         <tbody>

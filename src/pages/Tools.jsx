@@ -116,6 +116,20 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   async function handleSave() {
     if (!form.תאריך) return;
     setSaving(true);
+
+    // If no real history exists yet and tool has existing dates, persist the baseline first
+    const realRecords = historyCol.data.filter(r => r['מספר סידורי'] === tool['מספר סידורי']);
+    if (realRecords.length === 0 && (tool['תאריך בדיקה'] || tool['מועד הבא'])) {
+      await historyCol.appendRow({
+        'מספר סידורי': tool['מספר סידורי'],
+        'שם המכשיר':   tool['שם המכשיר'],
+        'תאריך בדיקה': tool['תאריך בדיקה'] || '—',
+        'מועד הבא':    tool['מועד הבא']    || '—',
+        'בוצע על ידי': '—',
+        recordedAt:    '2000-01-01T00:00:00.000Z',
+      });
+    }
+
     const displayDate     = toDisplay(form.תאריך);
     const displayNextDate = nextMode === 'note' && form.הערה.trim()
       ? form.הערה.trim()
@@ -361,13 +375,13 @@ export default function Tools() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            <th className="border border-[#999] px-3 py-2 font-bold">#</th>
-            <SortableHeader col="שם המכשיר"  label="שם המכשיר"  sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">מספר סידורי</th>
-            <SortableHeader col="תאריך בדיקה" label="תאריך בדיקה" sort={sort} onSort={toggleSort} />
-            <SortableHeader col="מועד הבא"    label="מועד הבא"    sort={sort} onSort={toggleSort} />
-            <SortableHeader col="מיקום"        label="מיקום"        sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
+            <SortableHeader col="#"            label="#"            sort={sort} onSort={toggleSort} />
+            <SortableHeader col="שם המכשיר"   label="שם המכשיר"   sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מספר סידורי"  label="מספר סידורי"  sort={sort} onSort={toggleSort} />
+            <SortableHeader col="תאריך בדיקה"  label="תאריך בדיקה"  sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
+            <SortableHeader col="_status"       label="סטטוס"         sort={sort} onSort={toggleSort} />
             <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
         </thead>
