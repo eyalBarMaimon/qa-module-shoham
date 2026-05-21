@@ -97,6 +97,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
   const [nextMode, setNextMode] = useState('date');
+  const [naMode, setNaMode] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showList, setShowList] = useState(false);
   const dropRef = useRef(null);
@@ -114,7 +115,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   }
 
   async function handleSave() {
-    if (!form.תאריך) return;
+    if (!naMode && !form.תאריך) return;
     setSaving(true);
 
     // If no real history exists yet and tool has existing dates, persist the baseline first
@@ -130,10 +131,11 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
       });
     }
 
-    const displayDate     = toDisplay(form.תאריך);
-    const displayNextDate = nextMode === 'note' && form.הערה.trim()
-      ? form.הערה.trim()
-      : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
+    const displayDate     = naMode ? 'NA' : toDisplay(form.תאריך);
+    const displayNextDate = naMode ? 'לא נדרש כיול'
+      : nextMode === 'note' && form.הערה.trim()
+        ? form.הערה.trim()
+        : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
 
     await historyCol.appendRow({
       'מספר סידורי': tool['מספר סידורי'],
@@ -153,6 +155,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
     await historyCol.fetchSheet();
     setSaving(false);
     setNextMode('date');
+    setNaMode(false);
     setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
   }
 
@@ -172,22 +175,36 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
           <div className="font-semibold text-sm mb-3">עדכון בדיקה חדשה</div>
           <div className="flex flex-wrap gap-3">
             <div>
-              <label className="text-xs text-gray-500 block mb-1">תאריך בדיקה</label>
-              <input type="date" value={form.תאריך}
-                onChange={e => setForm(f => ({ ...f, תאריך: e.target.value }))}
-                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-xs text-gray-500">תאריך בדיקה</label>
+                <label className="flex items-center gap-1 text-xs text-gray-400 cursor-pointer select-none">
+                  <input type="checkbox" checked={naMode} onChange={e => setNaMode(e.target.checked)} className="cursor-pointer" />
+                  NA
+                </label>
+              </div>
+              {naMode ? (
+                <div className="border border-gray-200 bg-gray-100 rounded px-2 py-1 text-sm text-gray-500 w-28">NA</div>
+              ) : (
+                <input type="date" value={form.תאריך}
+                  onChange={e => setForm(f => ({ ...f, תאריך: e.target.value }))}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
+              )}
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <label className="text-xs text-gray-500">מועד הבא (אופציונלי)</label>
-                <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
-                  <button type="button" onClick={() => setNextMode('date')}
-                    className={`px-2 py-0.5 ${nextMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>תאריך</button>
-                  <button type="button" onClick={() => setNextMode('note')}
-                    className={`px-2 py-0.5 ${nextMode === 'note' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>הערה</button>
-                </div>
+                {!naMode && (
+                  <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
+                    <button type="button" onClick={() => setNextMode('date')}
+                      className={`px-2 py-0.5 ${nextMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>תאריך</button>
+                    <button type="button" onClick={() => setNextMode('note')}
+                      className={`px-2 py-0.5 ${nextMode === 'note' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}>הערה</button>
+                  </div>
+                )}
               </div>
-              {nextMode === 'date' ? (
+              {naMode ? (
+                <div className="border border-gray-200 bg-gray-100 rounded px-2 py-1 text-sm text-gray-500">לא נדרש כיול</div>
+              ) : nextMode === 'date' ? (
                 <input type="date" value={form.מועד_הבא}
                   onChange={e => setForm(f => ({ ...f, מועד_הבא: e.target.value }))}
                   className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
@@ -220,7 +237,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
               )}
             </div>
           </div>
-          <button onClick={handleSave} disabled={saving || !form.תאריך}
+          <button onClick={handleSave} disabled={saving || (!naMode && !form.תאריך)}
             className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
             {saving ? 'שומר...' : 'שמור בדיקה'}
           </button>
@@ -311,7 +328,14 @@ export default function Tools() {
   );
 
   const filtered = useMemo(() => {
+    const seen = new Set();
     return toolsCol.data
+      .filter(r => {
+        const num = String(r['#'] ?? '');
+        if (num && seen.has(num)) return false;
+        if (num) seen.add(num);
+        return true;
+      })
       .filter(r => showHidden || r.hidden !== 'true')
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'tools') }))
       .filter(r => {
