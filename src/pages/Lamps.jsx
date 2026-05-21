@@ -24,9 +24,15 @@ function LampHistoryDialog({ lamp, historyCol, onClose }) {
     [historyCol.data, lamp._id]
   );
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div>
             <div className="font-bold text-base">{lamp['שם המכונה']}</div>

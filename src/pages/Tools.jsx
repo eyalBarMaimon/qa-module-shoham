@@ -20,6 +20,12 @@ function EditToolDialog({ tool, onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   async function handleSave() {
     if (!form['שם המכשיר'].trim()) return;
     setSaving(true);
@@ -38,8 +44,8 @@ function EditToolDialog({ tool, onClose, onSave }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div className="font-bold text-base">עריכת פרטי מכשיר</div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
@@ -72,6 +78,12 @@ function AddToolDialog({ onClose, onSave }) {
   });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   function toDisplay(iso) {
     if (!iso) return '';
     const [y, m, d] = iso.split('-');
@@ -102,8 +114,8 @@ function AddToolDialog({ onClose, onSave }) {
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div className="font-bold text-base">הוספת מכשיר חדש</div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
@@ -160,6 +172,12 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   const [attachedFile, setAttachedFile] = useState(null);
   const [fileResetKey, setFileResetKey] = useState(0);
   const dropRef = useRef(null);
+
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
 
   const computedFileName = useMemo(() => {
     if (!attachedFile) return '';
@@ -242,8 +260,8 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
 
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div>
