@@ -21,7 +21,7 @@ function toDisplay(iso) {
 }
 
 // ── Filter update + history dialog ────────────────────────────────────────────
-function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
+function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) {
   const history = useMemo(() => {
     const records = [...historyCol.data]
       .filter(r => r.filter_id === filter._id)
@@ -31,6 +31,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
       return [{
         _baseline: true,
         'תאריך אחרון': filter['תאריך אחרון'],
+        'תדירות':      filter['תדירות'] || '—',
         'בוצע על ידי': '—',
         recordedAt: '',
       }];
@@ -41,6 +42,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
     תאריך_אחרון: toISO(filter['תאריך אחרון']) || today,
+    תדירות:      filter['תדירות'] || '',
     בוצע_על_ידי: '',
   });
   const [saving, setSaving] = useState(false);
@@ -54,6 +56,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
         filter_id:      filter._id,
         'מ. פילטר':    filter['מ. פילטר'],
         'תאריך אחרון': filter['תאריך אחרון'],
+        'תדירות':      filter['תדירות'] || '—',
         'בוצע על ידי': '—',
         recordedAt:    '2000-01-01T00:00:00.000Z',
       });
@@ -64,17 +67,20 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
       filter_id:      filter._id,
       'מ. פילטר':    filter['מ. פילטר'],
       'תאריך אחרון': displayDate,
+      'תדירות':      form.תדירות || '—',
       'בוצע על ידי': form.בוצע_על_ידי || '—',
       recordedAt:    new Date().toISOString(),
     });
 
     filtersCol.setData(prev => prev.map(r =>
-      r._id === filter._id ? { ...r, 'תאריך אחרון': displayDate } : r
+      r._id === filter._id
+        ? { ...r, 'תאריך אחרון': displayDate, 'תדירות': form.תדירות }
+        : r
     ));
-    await filtersCol.updateRow(filter._id, { 'תאריך אחרון': displayDate });
+    await filtersCol.updateRow(filter._id, { 'תאריך אחרון': displayDate, 'תדירות': form.תדירות });
     await historyCol.fetchSheet();
     setSaving(false);
-    setForm({ תאריך_אחרון: form.תאריך_אחרון, בוצע_על_ידי: '' });
+    setForm({ תאריך_אחרון: form.תאריך_אחרון, תדירות: form.תדירות, בוצע_על_ידי: '' });
   }
 
   return (
@@ -101,6 +107,19 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
             </div>
             <div>
+              <label className="text-xs text-gray-500 block mb-1">תדירות</label>
+              <input
+                list="freq-list"
+                value={form.תדירות}
+                onChange={e => setForm(f => ({ ...f, תדירות: e.target.value }))}
+                placeholder="בחר או כתוב..."
+                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-36"
+              />
+              <datalist id="freq-list">
+                {uniqueFreqs.map(f => <option key={f} value={f} />)}
+              </datalist>
+            </div>
+            <div>
               <label className="text-xs text-gray-500 block mb-1">בוצע על ידי</label>
               <input value={form.בוצע_על_ידי}
                 onChange={e => setForm(f => ({ ...f, בוצע_על_ידי: e.target.value }))}
@@ -125,6 +144,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
               <thead>
                 <tr className="bg-gray-100 text-right">
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">תאריך ביצוע</th>
+                  <th className="border border-gray-200 px-3 py-1.5 font-semibold">תדירות</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">בוצע על ידי</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">נרשם בתאריך</th>
                 </tr>
@@ -136,6 +156,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol }) {
                       {r['תאריך אחרון']}
                       {r._baseline && <span className="mr-2 text-xs text-yellow-700">(נתון קיים)</span>}
                     </td>
+                    <td className="border border-gray-200 px-3 py-1.5">{r['תדירות']}</td>
                     <td className="border border-gray-200 px-3 py-1.5">{r['בוצע על ידי']}</td>
                     <td className="border border-gray-200 px-3 py-1.5 text-gray-400 text-xs" dir="ltr">
                       {r.recordedAt && r.recordedAt !== '2000-01-01T00:00:00.000Z'
@@ -163,6 +184,10 @@ export default function Filters() {
     filtersCol.fetchSheet();
     historyCol.fetchSheet();
   }, []);
+
+  const uniqueFreqs = useMemo(() =>
+    [...new Set(filtersCol.data.map(r => r['תדירות']).filter(Boolean))].sort(),
+    [filtersCol.data]);
 
   const filtered = useMemo(() =>
     filtersCol.data.map(r => ({ ...r, _status: calcFilterStatus(r['תאריך אחרון'], r['תדירות']) })),
@@ -230,6 +255,7 @@ export default function Filters() {
           onClose={() => setActiveFilter(null)}
           historyCol={historyCol}
           filtersCol={filtersCol}
+          uniqueFreqs={uniqueFreqs}
         />
       )}
     </div>
