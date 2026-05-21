@@ -1,4 +1,4 @@
-import { readFileSync, mkdirSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { initializeApp } from 'firebase/app';
@@ -6,6 +6,8 @@ import { getFirestore, collection, getDocs } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// ─── env ──────────────────────────────────────────────────────────────────────
 
 function loadEnv() {
   const localPath = join(__dirname, '.env.local');
@@ -31,6 +33,8 @@ function parseEnv(path) {
   );
 }
 
+// ─── collections ─────────────────────────────────────────────────────────────
+
 const COLLECTIONS = [
   { id: 'Tools',            sheet: 'כלי מדידה',            cols: ['#','שם המכשיר','מספר סידורי','תחום מדידה','תאריך בדיקה','מועד הבא','מיקום'] },
   { id: 'ToolsHistory',     sheet: 'היסטוריה - כלי מדידה', cols: null },
@@ -53,7 +57,7 @@ function cleanDoc(data) {
     Object.entries(rest).map(([k, v]) => {
       if (Array.isArray(v)) return [k, v.join(', ')];
       if (v && typeof v === 'object' && typeof v.toDate === 'function')
-        return [k, v.toDate().toLocaleDateString('en-GB')]; // Firestore Timestamp → DD/MM/YYYY
+        return [k, v.toDate().toLocaleDateString('en-GB')];
       return [k, v ?? ''];
     })
   );
@@ -62,26 +66,16 @@ function cleanDoc(data) {
 function todayStr() {
   const d = new Date();
   const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
+  const mm  = String(d.getMonth() + 1).padStart(2, '0');
+  const dd  = String(d.getDate()).padStart(2, '0');
   return `${yyyy}${mm}${dd}`;
 }
 
-async function main() {
+// ─── Excel export ─────────────────────────────────────────────────────────────
+
+async function exportExcel(savePath, db) {
   console.log('=== Quality Assurance Backup - Excel Export ===\n');
 
-  const env = loadEnv();
-
-  const app = initializeApp({
-    apiKey:            env.VITE_FIREBASE_API_KEY,
-    authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN,
-    projectId:         env.VITE_FIREBASE_PROJECT_ID,
-    storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-    appId:             env.VITE_FIREBASE_APP_ID,
-  });
-
-  const db = getFirestore(app);
   const wb = XLSX.utils.book_new();
 
   for (const col of COLLECTIONS) {
@@ -90,7 +84,6 @@ async function main() {
       const snap = await getDocs(collection(db, col.id));
       const rawRows = snap.docs.map(d => cleanDoc(d.data()));
 
-      // enforce column order when defined; fill missing fields with ''
       const rows = col.cols && rawRows.length > 0
         ? rawRows.map(row => Object.fromEntries(col.cols.map(c => [c, row[c] ?? ''])))
         : rawRows;
@@ -113,14 +106,99 @@ async function main() {
     }
   }
 
-  const exportsDir = process.argv[2] || 'E:\\Downloads';
-  if (!existsSync(exportsDir)) mkdirSync(exportsDir, { recursive: true });
+  if (!existsSync(savePath)) mkdirSync(savePath, { recursive: true });
 
   const filename = `${todayStr()} Quality Assurance Backup.xlsx`;
-  XLSX.writeFile(wb, join(exportsDir, filename));
+  XLSX.writeFile(wb, join(savePath, filename));
+  console.log(`\nSaved: ${savePath}\\${filename}`);
+}
 
-  console.log(`\nSaved: ${exportsDir}\\${filename}`);
-  process.exit(0);
+// ─── GitHub Scanned_Doc download ──────────────────────────────────────────────
+
+// Lists all blob paths under a directory using the Contents API (avoids tree truncation).
+async function listDir(repoSlug, dirPath, token) {
+  const res = await fetch(
+    `https://api.github.com/repos/${repoSlug}/contents/${dirPath.split('/').map(encodeURIComponent).join('/')}`,
+    { headers: { 'User-Agent': 'qa-backup-script', Authorization: `token ${token}` } }
+  );
+  if (!res.ok) {
+    console.log(`  Warning: GitHub API ${res.status} for ${dirPath}`);
+    return [];
+  }
+  const items = await res.json();
+  const blobs = [];
+  for (const item of items) {
+    if (item.type === 'file') blobs.push(item.path);
+    else if (item.type === 'dir') blobs.push(...await listDir(repoSlug, item.path, token));
+  }
+  return blobs;
+}
+
+async function downloadScanedDocs(savePath, repoSlug, token) {
+  console.log('\n=== Downloading Scanned_Doc files ===\n');
+
+  const filePaths = await listDir(repoSlug, 'Scanned_Doc', token);
+  if (filePaths.length === 0) {
+    console.log('No files found under Scanned_Doc/.');
+    return;
+  }
+
+  let downloaded = 0;
+  let skipped    = 0;
+  let failed     = 0;
+
+  for (const filePath of filePaths) {
+    const localPath = join(savePath, filePath);
+
+    if (existsSync(localPath)) {
+      skipped++;
+      continue;
+    }
+
+    const dir = dirname(localPath);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+
+    const encodedPath = filePath.split('/').map(encodeURIComponent).join('/');
+    const rawUrl = `https://raw.githubusercontent.com/${repoSlug}/main/${encodedPath}`;
+
+    try {
+      const res = await fetch(rawUrl, { headers: { 'User-Agent': 'qa-backup-script', Authorization: `token ${token}` } });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      writeFileSync(localPath, Buffer.from(await res.arrayBuffer()));
+      console.log(`  Downloaded: ${filePath}`);
+      downloaded++;
+    } catch (err) {
+      console.log(`  Failed: ${filePath} — ${err.message}`);
+      failed++;
+    }
+  }
+
+  const failedMsg = failed ? `, ${failed} failed` : '';
+  console.log(`\nScanned docs: ${downloaded} new, ${skipped} already exist${failedMsg}`);
+}
+
+// ─── main ─────────────────────────────────────────────────────────────────────
+
+async function main() {
+  const savePath   = process.argv[2] || 'E:\\Downloads';
+  const githubRepo = process.argv[3] || null;
+
+  const env = loadEnv();
+  const app = initializeApp({
+    apiKey:            env.VITE_FIREBASE_API_KEY,
+    authDomain:        env.VITE_FIREBASE_AUTH_DOMAIN,
+    projectId:         env.VITE_FIREBASE_PROJECT_ID,
+    storageBucket:     env.VITE_FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+    appId:             env.VITE_FIREBASE_APP_ID,
+  });
+
+  await exportExcel(savePath, getFirestore(app));
+
+  if (githubRepo) {
+    await downloadScanedDocs(savePath, githubRepo, env.VITE_GITHUB_TOKEN);
+  }
 }
 
 main().catch(err => {

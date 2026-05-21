@@ -1,6 +1,6 @@
 const UPLOAD_TIMEOUT_MS = 30000;
 const GH_OWNER = 'eyalBarMaimon';
-const GH_REPO  = 'qa-calibrations';
+const GH_REPO  = 'qa-module-shoham';
 
 // Builds filename: YYYYMMDD_serialnumber
 export function buildFileName(dateISO, identifier) {
@@ -26,9 +26,9 @@ function fileToBase64(file) {
   });
 }
 
-// Uploads to GitHub repo qa-calibrations
+// Uploads to GitHub repo qa-module-shoham under Scanned_Doc/
 // Returns a raw.githubusercontent.com URL (permanently public)
-export async function uploadCalibrationFile(file, category, folderName, fileName) {
+export async function uploadScanedDoc(file, category, folderName, fileName) {
   const token = import.meta.env.VITE_GITHUB_TOKEN;
 
   const cleanFolder = String(folderName || '')
@@ -37,7 +37,7 @@ export async function uploadCalibrationFile(file, category, folderName, fileName
     .replace(/^_|_$/g, '');
 
   const ext  = file.name.split('.').pop().toLowerCase();
-  const path = `calibrations/${category}/${cleanFolder}/${fileName}.${ext}`;
+  const path = `Scanned_Doc/${category}/${cleanFolder}/${fileName}.${ext}`;
   const url  = `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/contents/${path}`;
 
   const uploadPromise = (async () => {
@@ -48,7 +48,7 @@ export async function uploadCalibrationFile(file, category, folderName, fileName
     const check = await fetch(url, { headers: { Authorization: `token ${token}` } });
     if (check.ok) sha = (await check.json()).sha;
 
-    const body = { message: `Add calibration: ${path}`, content: base64 };
+    const body = { message: `Add scaned doc: ${path}`, content: base64 };
     if (sha) body.sha = sha;
 
     const res = await fetch(url, {
