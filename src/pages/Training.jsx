@@ -227,7 +227,7 @@ export default function Training() {
                     <input type="checkbox" checked={t.בוצע} onChange={e => updateTopic(i, 'בוצע', e.target.checked)} className="w-4 h-4" />
                   </td>
                   <td className="border border-[#999] px-2 py-1.5 text-center">
-                    {t.בוצע && t.תאריך ? (
+                    {t.בוצע && t.תאריך && t.מדריך.trim() && t.משתתפים.length > 0 ? (
                       <button
                         onClick={() => confirmTraining(i)}
                         disabled={confirmingIdx === i}
