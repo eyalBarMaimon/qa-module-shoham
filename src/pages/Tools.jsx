@@ -77,12 +77,22 @@ function AddToolDialog({ onClose, onSave }) {
 
 // ── Inspection dialog ─────────────────────────────────────────────────────────
 function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
-  const history = useMemo(() =>
-    [...historyCol.data]
+  const history = useMemo(() => {
+    const records = [...historyCol.data]
       .filter(r => r['מספר סידורי'] === tool['מספר סידורי'])
-      .sort((a, b) => (b.recordedAt || '').localeCompare(a.recordedAt || '')),
-    [historyCol.data, tool]
-  );
+      .sort((a, b) => (b.recordedAt || '').localeCompare(a.recordedAt || ''));
+
+    // If no history yet, show the tool's current fields as a baseline row
+    if (records.length === 0 && (tool['תאריך בדיקה'] || tool['מועד הבא'])) {
+      return [{
+        _baseline: true,
+        'תאריך בדיקה': tool['תאריך בדיקה'] || '—',
+        'מועד הבא':    tool['מועד הבא']    || '—',
+        'בוצע על ידי': '—',
+      }];
+    }
+    return records;
+  }, [historyCol.data, tool]);
 
   const today = new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
@@ -219,8 +229,11 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
               </thead>
               <tbody>
                 {history.map((r, i) => (
-                  <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-200 px-3 py-1.5">{r['תאריך בדיקה']}</td>
+                  <tr key={r._id || i} className={r._baseline ? 'bg-yellow-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="border border-gray-200 px-3 py-1.5">
+                      {r['תאריך בדיקה']}
+                      {r._baseline && <span className="mr-2 text-xs text-yellow-700">(נתון קיים)</span>}
+                    </td>
                     <td className="border border-gray-200 px-3 py-1.5">{r['מועד הבא']}</td>
                     <td className="border border-gray-200 px-3 py-1.5">{r['בוצע על ידי']}</td>
                   </tr>
