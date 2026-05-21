@@ -103,6 +103,7 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
     בוצע_על_ידי: '',
   });
   const [saving, setSaving] = useState(false);
+  const [uploadError, setUploadError] = useState('');
   const [attachedFile, setAttachedFile] = useState(null);
   const [fileResetKey, setFileResetKey] = useState(0);
 
@@ -131,12 +132,13 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
 
       let fileUrl = '';
       let fileName = '';
+      setUploadError('');
       if (attachedFile && computedFileName) {
         try {
           fileUrl = await uploadCalibrationFile(attachedFile, 'machines', machine['שם'], computedFileName);
           fileName = computedFileName;
         } catch (err) {
-          console.error('File upload failed:', err);
+          setUploadError(err.message || 'העלאת הקובץ נכשלה — הרשומה נשמרה ללא קובץ');
         }
       }
 
@@ -206,10 +208,15 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
           <div className="mt-3">
             <FileDropZone
               key={fileResetKey}
-              onFile={setAttachedFile}
+              onFile={f => { setAttachedFile(f); setUploadError(''); }}
               computedFileName={computedFileName}
             />
           </div>
+          {uploadError && (
+            <div className="mt-2 text-xs text-red-600 bg-red-50 border border-red-200 rounded px-3 py-1.5">
+              {uploadError}
+            </div>
+          )}
           <button onClick={handleSave} disabled={saving || !form.תאריך_כיול}
             className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
             {saving ? (attachedFile ? 'מעלה קובץ...' : 'שומר...') : 'שמור כיול'}
