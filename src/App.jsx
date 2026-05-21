@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { APP_PASSWORD } from './utils/constants';
 import TabNav from './components/TabNav';
 import DocFooter from './components/DocFooter';
+import DemoWatermark from './components/DemoWatermark';
 import Dashboard from './pages/Dashboard';
 import Tools from './pages/Tools';
 import Machines from './pages/Machines';
@@ -57,6 +58,8 @@ function Login({ onLogin }) {
   );
 }
 
+const isDemo = new URLSearchParams(window.location.search).has('demo');
+
 export default function App() {
   const [authed, setAuthed] = useState(() => localStorage.getItem('qa_auth') === '1');
   const [tab, setTab] = useState('dashboard');
@@ -67,6 +70,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      {isDemo && <DemoWatermark />}
       <div className="max-w-7xl mx-auto p-4">
         <div className="flex justify-between items-center mb-3">
           <div className="text-lg font-bold text-gray-800">מודול איכות — M. Shoham Trading LTD.</div>
