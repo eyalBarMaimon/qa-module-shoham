@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { APP_PASSWORD } from './utils/constants';
 import TabNav from './components/TabNav';
 import DocFooter from './components/DocFooter';
-import DemoWatermark from './components/DemoWatermark';
 import logo from './assets/logo.jpeg';
 import Dashboard from './pages/Dashboard';
 import Tools from './pages/Tools';
@@ -68,7 +67,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <DemoWatermark />
       <div className="max-w-7xl mx-auto p-2 sm:p-4">
         <div className="flex justify-end items-center mb-3">
           <button

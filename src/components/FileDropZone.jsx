@@ -1,19 +1,51 @@
 import { useRef, useState } from 'react';
 
-export default function FileDropZone({ onFile, computedFileName }) {
-  const inputRef = useRef(null);
-  const [dragging, setDragging] = useState(false);
+const ACCEPTED_TYPES = ['application/pdf', 'image/jpeg', 'image/jpg'];
+const ACCEPTED_EXTS  = ['.pdf', '.jpg', '.jpeg'];
 
-  function handleDrop(e) {
+function isAccepted(file) {
+  if (ACCEPTED_TYPES.includes(file.type)) return true;
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  return ACCEPTED_EXTS.includes(ext);
+}
+
+export default function FileDropZone({ onFile, computedFileName }) {
+  const inputRef   = useRef(null);
+  const dragCount  = useRef(0);
+  const [dragging, setDragging] = useState(false);
+  const [typeError, setTypeError] = useState(false);
+
+  function handleDragEnter(e) {
     e.preventDefault();
-    setDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f) onFile(f);
+    dragCount.current += 1;
+    if (dragCount.current === 1) setDragging(true);
   }
 
   function handleDragOver(e) {
     e.preventDefault();
-    setDragging(true);
+  }
+
+  function handleDragLeave(e) {
+    e.preventDefault();
+    dragCount.current -= 1;
+    if (dragCount.current === 0) setDragging(false);
+  }
+
+  function handleDrop(e) {
+    e.preventDefault();
+    dragCount.current = 0;
+    setDragging(false);
+    setTypeError(false);
+    const f = e.dataTransfer.files[0];
+    if (!f) return;
+    if (!isAccepted(f)) { setTypeError(true); return; }
+    onFile(f);
+  }
+
+  function handleChange(e) {
+    setTypeError(false);
+    const f = e.target.files[0];
+    if (f) onFile(f);
   }
 
   return (
@@ -21,26 +53,30 @@ export default function FileDropZone({ onFile, computedFileName }) {
       <label className="text-xs text-gray-500 block mb-1">צרף מסמך כיול (PDF / JPG)</label>
       <div
         onClick={() => inputRef.current?.click()}
-        onDrop={handleDrop}
+        onDragEnter={handleDragEnter}
         onDragOver={handleDragOver}
-        onDragLeave={() => setDragging(false)}
-        onDragEnd={() => setDragging(false)}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg px-4 py-4 text-center cursor-pointer select-none transition-colors
           ${dragging
             ? 'border-blue-400 bg-blue-50'
-            : computedFileName
-              ? 'border-green-400 bg-green-50'
-              : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
+            : typeError
+              ? 'border-red-400 bg-red-50'
+              : computedFileName
+                ? 'border-green-400 bg-green-50'
+                : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
           }`}
       >
         <input
           ref={inputRef}
           type="file"
           accept=".pdf,.jpg,.jpeg"
-          onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]); }}
+          onChange={handleChange}
           className="hidden"
         />
-        {computedFileName ? (
+        {typeError ? (
+          <div className="text-sm text-red-600">סוג קובץ לא נתמך — יש לבחור PDF או JPG בלבד</div>
+        ) : computedFileName ? (
           <div className="text-sm text-green-700 font-medium break-all">{computedFileName}</div>
         ) : (
           <>

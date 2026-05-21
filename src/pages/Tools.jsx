@@ -127,61 +127,62 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   async function handleSave() {
     if (!naMode && !form.תאריך) return;
     setSaving(true);
+    try {
+      const realRecords = historyCol.data.filter(r => r['מספר סידורי'] === tool['מספר סידורי']);
+      if (realRecords.length === 0 && (tool['תאריך בדיקה'] || tool['מועד הבא'])) {
+        await historyCol.appendRow({
+          'מספר סידורי': tool['מספר סידורי'],
+          'שם המכשיר':   tool['שם המכשיר'],
+          'תאריך בדיקה': tool['תאריך בדיקה'] || '—',
+          'מועד הבא':    tool['מועד הבא']    || '—',
+          'בוצע על ידי': '—',
+          recordedAt:    '2000-01-01T00:00:00.000Z',
+        });
+      }
 
-    // If no real history exists yet and tool has existing dates, persist the baseline first
-    const realRecords = historyCol.data.filter(r => r['מספר סידורי'] === tool['מספר סידורי']);
-    if (realRecords.length === 0 && (tool['תאריך בדיקה'] || tool['מועד הבא'])) {
+      const displayDate     = naMode ? 'NA' : toDisplay(form.תאריך);
+      const displayNextDate = naMode ? 'לא נדרש כיול'
+        : nextMode === 'note' && form.הערה.trim()
+          ? form.הערה.trim()
+          : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
+
+      let fileUrl = '';
+      let fileName = '';
+      if (attachedFile && computedFileName) {
+        try {
+          fileUrl = await uploadCalibrationFile(attachedFile, 'tools', tool['שם המכשיר'], computedFileName);
+          fileName = computedFileName;
+        } catch (err) {
+          console.error('File upload failed:', err);
+        }
+      }
+
       await historyCol.appendRow({
         'מספר סידורי': tool['מספר סידורי'],
         'שם המכשיר':   tool['שם המכשיר'],
-        'תאריך בדיקה': tool['תאריך בדיקה'] || '—',
-        'מועד הבא':    tool['מועד הבא']    || '—',
-        'בוצע על ידי': '—',
-        recordedAt:    '2000-01-01T00:00:00.000Z',
+        'תאריך בדיקה': displayDate,
+        'מועד הבא':    displayNextDate,
+        'בוצע על ידי': form.בוצע_על_ידי,
+        recordedAt:    new Date().toISOString(),
+        fileUrl,
+        fileName,
       });
+
+      toolsCol.setData(prev => prev.map(r =>
+        r._id === tool._id
+          ? { ...r, 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate }
+          : r
+      ));
+      await toolsCol.updateRow(tool._id, { 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate });
+      await historyCol.fetchSheet();
+      setNextMode('date');
+      setNaMode(false);
+      setAttachedFile(null);
+      setFileResetKey(k => k + 1);
+      setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
+    } finally {
+      setSaving(false);
     }
-
-    const displayDate     = naMode ? 'NA' : toDisplay(form.תאריך);
-    const displayNextDate = naMode ? 'לא נדרש כיול'
-      : nextMode === 'note' && form.הערה.trim()
-        ? form.הערה.trim()
-        : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
-
-    let fileUrl = '';
-    let fileName = '';
-    if (attachedFile && computedFileName) {
-      try {
-        fileUrl = await uploadCalibrationFile(attachedFile, 'tools', tool['שם המכשיר'], computedFileName);
-        fileName = computedFileName;
-      } catch (err) {
-        console.error('File upload failed:', err);
-      }
-    }
-
-    await historyCol.appendRow({
-      'מספר סידורי': tool['מספר סידורי'],
-      'שם המכשיר':   tool['שם המכשיר'],
-      'תאריך בדיקה': displayDate,
-      'מועד הבא':    displayNextDate,
-      'בוצע על ידי': form.בוצע_על_ידי,
-      recordedAt:    new Date().toISOString(),
-      fileUrl,
-      fileName,
-    });
-
-    toolsCol.setData(prev => prev.map(r =>
-      r._id === tool._id
-        ? { ...r, 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate }
-        : r
-    ));
-    await toolsCol.updateRow(tool._id, { 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate });
-    await historyCol.fetchSheet();
-    setSaving(false);
-    setNextMode('date');
-    setNaMode(false);
-    setAttachedFile(null);
-    setFileResetKey(k => k + 1);
-    setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
   }
 
   return (

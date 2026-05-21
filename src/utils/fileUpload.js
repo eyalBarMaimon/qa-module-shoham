@@ -14,7 +14,7 @@ export function buildFileName(dateISO, identifier, file) {
 // Uploads to: calibrations/{category}/{folderName}/{fileName}
 // e.g. calibrations/tools/AL120/15062026_B21019951.pdf
 export async function uploadCalibrationFile(file, category, folderName, fileName) {
-  const cleanFolder = String(folderName || '').replace(/[^a-zA-Z0-9֐-׿ _-]/g, '').trim();
+  const cleanFolder = String(folderName || '').replace(/[^a-zA-Z0-9א-ת_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
   const path = `calibrations/${category}/${cleanFolder}/${fileName}`;
   const storageRef = ref(storage, path);
   await uploadBytes(storageRef, file);

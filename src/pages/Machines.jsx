@@ -113,55 +113,57 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
 
   async function handleSave() {
     setSaving(true);
+    try {
+      const realRecords = historyCol.data.filter(r => r.machine_id === machine._id);
+      if (realRecords.length === 0 && (machine['תאריך כיול'] || machine['מועד הבא'])) {
+        await historyCol.appendRow({
+          machine_id:   machine._id,
+          'מ. מכונה':  machine['מ. מכונה'],
+          'תאריך כיול': machine['תאריך כיול'] || '—',
+          'מועד הבא':   machine['מועד הבא']   || '—',
+          'בוצע על ידי': '—',
+          recordedAt:   '2000-01-01T00:00:00.000Z',
+        });
+      }
 
-    const realRecords = historyCol.data.filter(r => r.machine_id === machine._id);
-    if (realRecords.length === 0 && (machine['תאריך כיול'] || machine['מועד הבא'])) {
+      const displayKiyul = toDisplay(form.תאריך_כיול);
+      const displayNext  = toDisplay(form.מועד_הבא);
+
+      let fileUrl = '';
+      let fileName = '';
+      if (attachedFile && computedFileName) {
+        try {
+          fileUrl = await uploadCalibrationFile(attachedFile, 'machines', machine['שם'], computedFileName);
+          fileName = computedFileName;
+        } catch (err) {
+          console.error('File upload failed:', err);
+        }
+      }
+
       await historyCol.appendRow({
         machine_id:   machine._id,
         'מ. מכונה':  machine['מ. מכונה'],
-        'תאריך כיול': machine['תאריך כיול'] || '—',
-        'מועד הבא':   machine['מועד הבא']   || '—',
-        'בוצע על ידי': '—',
-        recordedAt:   '2000-01-01T00:00:00.000Z',
+        'תאריך כיול': displayKiyul,
+        'מועד הבא':   displayNext  || '—',
+        'בוצע על ידי': form.בוצע_על_ידי || '—',
+        recordedAt:   new Date().toISOString(),
+        fileUrl,
+        fileName,
       });
+
+      machinesCol.setData(prev => prev.map(r =>
+        r._id === machine._id
+          ? { ...r, 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext }
+          : r
+      ));
+      await machinesCol.updateRow(machine._id, { 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext });
+      await historyCol.fetchSheet();
+      setAttachedFile(null);
+      setFileResetKey(k => k + 1);
+      setForm({ תאריך_כיול: form.תאריך_כיול, מועד_הבא: form.מועד_הבא, בוצע_על_ידי: '' });
+    } finally {
+      setSaving(false);
     }
-
-    const displayKiyul = toDisplay(form.תאריך_כיול);
-    const displayNext  = toDisplay(form.מועד_הבא);
-
-    let fileUrl = '';
-    let fileName = '';
-    if (attachedFile && computedFileName) {
-      try {
-        fileUrl = await uploadCalibrationFile(attachedFile, 'machines', machine['שם'], computedFileName);
-        fileName = computedFileName;
-      } catch (err) {
-        console.error('File upload failed:', err);
-      }
-    }
-
-    await historyCol.appendRow({
-      machine_id:   machine._id,
-      'מ. מכונה':  machine['מ. מכונה'],
-      'תאריך כיול': displayKiyul,
-      'מועד הבא':   displayNext  || '—',
-      'בוצע על ידי': form.בוצע_על_ידי || '—',
-      recordedAt:   new Date().toISOString(),
-      fileUrl,
-      fileName,
-    });
-
-    machinesCol.setData(prev => prev.map(r =>
-      r._id === machine._id
-        ? { ...r, 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext }
-        : r
-    ));
-    await machinesCol.updateRow(machine._id, { 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext });
-    await historyCol.fetchSheet();
-    setSaving(false);
-    setAttachedFile(null);
-    setFileResetKey(k => k + 1);
-    setForm({ תאריך_כיול: form.תאריך_כיול, מועד_הבא: form.מועד_הבא, בוצע_על_ידי: '' });
   }
 
   return (
