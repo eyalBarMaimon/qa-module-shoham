@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
-import { useSheets } from '../hooks/useSheets';
+import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcFilterStatus } from '../hooks/useStatus';
 import { exportTablePDF } from '../utils/exportPDF';
 

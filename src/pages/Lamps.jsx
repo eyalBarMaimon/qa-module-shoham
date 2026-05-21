@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import DocHeader from '../components/DocHeader';
-import { useSheets } from '../hooks/useSheets';
+import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
 import { todayFormatted } from '../utils/dateUtils';
 
@@ -15,14 +15,11 @@ const DEFAULT_LAMPS = [
 const COLS = ['שם המכונה', 'מ. סידורי מכונה', 'סוג מנורה', 'תאריך החלפה', 'כמות פולסים', 'הערות'];
 
 export default function Lamps() {
-  const { data, loading, error, fetchSheet, updateRow, appendRow, deleteRow } = useSheets('Lamps');
+  const { data, loading, error, fetchSheet, updateRow, appendRow, deleteRow } = useCollection('Lamps');
   const [rows, setRows] = useState(DEFAULT_LAMPS);
   const [editing, setEditing] = useState({});
 
-  useEffect(() => {
-    fetchSheet().then ? fetchSheet() : undefined;
-    fetchSheet();
-  }, []);
+  useEffect(() => { fetchSheet(); }, []);
 
   useEffect(() => {
     if (data.length > 0) setRows(data);
@@ -35,7 +32,7 @@ export default function Lamps() {
 
   async function handleSave(i) {
     const r = rows[i];
-    if (r._rowIndex) await updateRow(r._rowIndex, r);
+    if (r._id) await updateRow(r._id, r);
     else await appendRow(r);
     setEditing(e => { const n = { ...e }; delete n[i]; return n; });
     fetchSheet();
@@ -47,7 +44,7 @@ export default function Lamps() {
 
   async function removeRow(i) {
     const r = rows[i];
-    if (r._rowIndex) await deleteRow(r._rowIndex);
+    if (r._id) await deleteRow(r._id);
     setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import DocHeader from '../components/DocHeader';
-import { useSheets } from '../hooks/useSheets';
+import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
 
 const DEFAULT_TOPICS = [
@@ -14,8 +14,8 @@ const DEFAULT_TOPICS = [
 const DEFAULT_EMPLOYEES = ['סבטלנה מטבייב', 'דני שהם', 'איציק נוסם', 'אילנה הופמן', 'סגי ישראל'];
 
 export default function Training() {
-  const trainingSheet = useSheets('Training');
-  const employeesSheet = useSheets('Employees');
+  const trainingSheet = useCollection('Training');
+  const employeesSheet = useCollection('Employees');
 
   const [topics, setTopics] = useState(DEFAULT_TOPICS.map(t => ({ ...t, מדריך: '', תאריך: '', בוצע: false, משתתפים: [] })));
   const [employees, setEmployees] = useState(DEFAULT_EMPLOYEES);
