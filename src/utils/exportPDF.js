@@ -45,8 +45,8 @@ export async function exportTablePDF(tab, columns, rows) {
           <td style="width:90px;text-align:center;border-left:1px solid #999;padding:4px 6px;">
             <img src="${logoUrl}" style="height:38px;object-fit:contain;" />
           </td>
-          <td style="text-align:center;font-weight:bold;font-size:13px;padding:4px;">
-            M. Shoham Trading LTD. / Quality Assurance
+          <td style="text-align:center;font-weight:bold;font-size:16px;padding:4px;">
+            Quality Assurance
           </td>
           <td style="width:55px;text-align:center;font-size:9px;padding:4px;border-right:1px solid #999;">
             v${APP_VERSION}

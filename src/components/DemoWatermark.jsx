@@ -1,5 +1,5 @@
 export default function DemoWatermark() {
-  const tiles = Array.from({ length: 30 });
+  const tiles = Array.from({ length: 40 });
 
   return (
     <div
@@ -10,11 +10,10 @@ export default function DemoWatermark() {
       <div
         style={{
           position: 'absolute',
-          inset: '-50%',
+          inset: '-60%',
           display: 'grid',
           gridTemplateColumns: 'repeat(5, 1fr)',
           transform: 'rotate(-35deg)',
-          opacity: 0.08,
         }}
       >
         {tiles.map((_, i) => (
@@ -25,10 +24,11 @@ export default function DemoWatermark() {
               alignItems: 'center',
               justifyContent: 'center',
               padding: '40px 20px',
-              fontSize: '52px',
+              fontSize: '56px',
               fontWeight: 900,
               fontFamily: 'Arial, sans-serif',
-              color: '#000',
+              color: '#1a1a1a',
+              opacity: 0.12,
               letterSpacing: '6px',
               userSelect: 'none',
               whiteSpace: 'nowrap',

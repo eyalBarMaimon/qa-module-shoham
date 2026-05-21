@@ -13,8 +13,8 @@ export default function DocHeader({ tab }) {
         <div className="w-32 p-2 border-l border-[#999] flex items-center justify-center">
           <img src={logo} alt="M. Shoham" className="h-16 object-contain" />
         </div>
-        <div className="flex-1 text-center font-bold py-2">
-          M. Shoham Trading LTD. / Quality Assurance
+        <div className="flex-1 text-center font-bold py-2 text-lg">
+          Quality Assurance
         </div>
       </div>
       {/* Row 2 */}
