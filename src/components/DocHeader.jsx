@@ -22,8 +22,7 @@ export default function DocHeader({ tab }) {
           </div>
           <div className="border-t border-[#999] flex text-xs text-gray-600">
             <div className="flex-1 px-2 py-1 border-l border-[#999]">Chapter: {chapter}</div>
-            <div className="px-2 py-1 border-l border-[#999] whitespace-nowrap">Update: {todayFormatted()}</div>
-            <div className="px-2 py-1 whitespace-nowrap">Rev. 02</div>
+            <div className="px-2 py-1 whitespace-nowrap">Update: {todayFormatted()}</div>
           </div>
           <div className="bg-[#D9D9D9] px-2 py-2 text-base font-bold border-t border-[#999] text-center">
             {subject}

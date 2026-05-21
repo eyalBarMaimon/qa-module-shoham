@@ -15,7 +15,8 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   );
 
   const today = new Date().toISOString().slice(0, 10);
-  const [form, setForm] = useState({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '' });
+  const [form, setForm] = useState({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
+  const [nextMode, setNextMode] = useState('date');
   const [saving, setSaving] = useState(false);
   const [showList, setShowList] = useState(false);
   const dropRef = useRef(null);
@@ -36,7 +37,9 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
     if (!form.תאריך) return;
     setSaving(true);
     const displayDate    = toDisplay(form.תאריך);
-    const displayNextDate = form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
+    const displayNextDate = nextMode === 'note' && form.הערה.trim()
+      ? form.הערה.trim()
+      : form.מועד_הבא ? toDisplay(form.מועד_הבא) : tool['מועד הבא'];
 
     await historyCol.appendRow({
       'מספר סידורי':  tool['מספר סידורי'],
@@ -57,7 +60,8 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
 
     await historyCol.fetchSheet();
     setSaving(false);
-    setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '' });
+    setNextMode('date');
+    setForm({ תאריך: today, מועד_הבא: '', בוצע_על_ידי: '', הערה: '' });
   }
 
   return (
@@ -84,10 +88,29 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
             </div>
             <div>
-              <label className="text-xs text-gray-500 block mb-1">מועד הבא (אופציונלי)</label>
-              <input type="date" value={form.מועד_הבא}
-                onChange={e => setForm(f => ({ ...f, מועד_הבא: e.target.value }))}
-                className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
+              <div className="flex items-center gap-2 mb-1">
+                <label className="text-xs text-gray-500">מועד הבא (אופציונלי)</label>
+                <div className="flex rounded overflow-hidden border border-gray-300 text-xs">
+                  <button type="button"
+                    onClick={() => setNextMode('date')}
+                    className={`px-2 py-0.5 ${nextMode === 'date' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                  >תאריך</button>
+                  <button type="button"
+                    onClick={() => setNextMode('note')}
+                    className={`px-2 py-0.5 ${nextMode === 'note' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                  >הערה</button>
+                </div>
+              </div>
+              {nextMode === 'date' ? (
+                <input type="date" value={form.מועד_הבא}
+                  onChange={e => setForm(f => ({ ...f, מועד_הבא: e.target.value }))}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400" dir="ltr" />
+              ) : (
+                <input type="text" value={form.הערה}
+                  onChange={e => setForm(f => ({ ...f, הערה: e.target.value }))}
+                  placeholder='למשל: אצל ספק, בבדיקה...'
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-44" />
+              )}
             </div>
             <div ref={dropRef} className="relative">
               <label className="text-xs text-gray-500 block mb-1">בוצע על ידי</label>
@@ -165,6 +188,7 @@ export default function Tools() {
   const [search, setSearch]             = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [activeTool, setActiveTool]     = useState(null);
+  const [togglingId, setTogglingId]     = useState(null);
 
   useEffect(() => {
     toolsCol.fetchSheet();
@@ -176,6 +200,15 @@ export default function Tools() {
     empCol.data.map(r => r['שם'] || Object.values(r).find(v => v && v !== r._id)).filter(Boolean),
     [empCol.data]
   );
+
+  async function handleDeactivate(row) {
+    setTogglingId(row._id);
+    toolsCol.setData(prev => prev.map(r =>
+      r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r
+    ));
+    await toolsCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+    setTogglingId(null);
+  }
 
   const rows = useMemo(() => {
     return toolsCol.data
@@ -240,12 +273,30 @@ export default function Tools() {
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
-                <button
-                  onClick={() => setActiveTool(r)}
-                  className="text-blue-600 text-xs hover:underline whitespace-nowrap"
-                >
-                  עדכן / היסטוריה
-                </button>
+                <div className="flex flex-col items-center gap-1">
+                  <button
+                    onClick={() => setActiveTool(r)}
+                    className="text-blue-600 text-xs hover:underline whitespace-nowrap"
+                  >
+                    עדכן / היסטוריה
+                  </button>
+                  {r._status === 'gray' ? (
+                    <button
+                      onClick={() => setActiveTool(r)}
+                      className="text-green-700 text-xs hover:underline whitespace-nowrap"
+                    >
+                      הפעל
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleDeactivate(r)}
+                      disabled={togglingId === r._id}
+                      className="text-gray-400 text-xs hover:text-red-500 hover:underline whitespace-nowrap disabled:opacity-50"
+                    >
+                      {togglingId === r._id ? '...' : 'השבת'}
+                    </button>
+                  )}
+                </div>
               </td>
             </tr>
           ))}

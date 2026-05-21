@@ -57,27 +57,44 @@ function TrainerCell({ value, employees, onChange }) {
   );
 }
 
+function emptyEditable(base = {}) {
+  return { נושא: '', מסמכים: '', ...base, מדריך: '', תאריך: '', בוצע: false, משתתפים: [], _custom: true };
+}
+
 export default function Training() {
   const employeesSheet = useCollection('Employees');
   const historySheet   = useCollection('TrainingHistory');
+  const topicsSheet    = useCollection('Training');
 
-  const [view, setView]               = useState('active'); // 'active' | 'history'
+  const [view, setView]               = useState('active');
   const [topics, setTopics]           = useState(DEFAULT_TOPICS.map(t => ({ ...t, מדריך: '', תאריך: '', בוצע: false, משתתפים: [] })));
   const [employees, setEmployees]     = useState(DEFAULT_EMPLOYEES);
   const [newEmployee, setNewEmployee] = useState('');
   const [dialogTopic, setDialogTopic] = useState(null);
   const [tempSelected, setTempSelected] = useState([]);
   const [confirmingIdx, setConfirmingIdx] = useState(null);
+  const [addingTopic, setAddingTopic] = useState(false);
+  const [newTopic, setNewTopic]       = useState({ נושא: '', מסמכים: '' });
+  const [savingTopic, setSavingTopic] = useState(false);
+  const [filterTopic, setFilterTopic] = useState('all');
 
   useEffect(() => {
     employeesSheet.fetchSheet();
     historySheet.fetchSheet();
+    topicsSheet.fetchSheet();
   }, []);
 
   useEffect(() => {
     if (employeesSheet.data.length > 0)
       setEmployees(employeesSheet.data.map(r => r['שם'] || Object.values(r).find(v => v && v !== r._id)).filter(Boolean));
   }, [employeesSheet.data]);
+
+  useEffect(() => {
+    if (topicsSheet.data.length > 0) {
+      const custom = topicsSheet.data.map(r => emptyEditable({ נושא: r.נושא || '', מסמכים: r.מסמכים || '', _firestoreId: r._id }));
+      setTopics([...DEFAULT_TOPICS.map(t => ({ ...t, מדריך: '', תאריך: '', בוצע: false, משתתפים: [] })), ...custom]);
+    }
+  }, [topicsSheet.data]);
 
   function updateTopic(i, field, val) {
     setTopics(prev => prev.map((t, idx) => idx === i ? { ...t, [field]: val } : t));
@@ -125,9 +142,30 @@ export default function Training() {
     historySheet.setData(prev => prev.filter(r => r._id !== docId));
   }
 
+  async function saveNewTopic() {
+    if (!newTopic.נושא.trim()) return;
+    setSavingTopic(true);
+    const id = await topicsSheet.appendRow({ נושא: newTopic.נושא.trim(), מסמכים: newTopic.מסמכים.trim() });
+    setTopics(prev => [...prev, emptyEditable({ נושא: newTopic.נושא.trim(), מסמכים: newTopic.מסמכים.trim(), _firestoreId: id })]);
+    setNewTopic({ נושא: '', מסמכים: '' });
+    setAddingTopic(false);
+    setSavingTopic(false);
+  }
+
+  async function deleteTopic(i) {
+    const t = topics[i];
+    if (t._firestoreId) await topicsSheet.deleteRow(t._firestoreId);
+    setTopics(prev => prev.filter((_, idx) => idx !== i));
+  }
+
   const sortedHistory = [...historySheet.data].sort((a, b) =>
     (b.confirmedAt || '').localeCompare(a.confirmedAt || '')
   );
+
+  const uniqueTopics = [...new Set(historySheet.data.map(r => r.נושא).filter(Boolean))].sort();
+  const filteredHistory = filterTopic === 'all'
+    ? sortedHistory
+    : sortedHistory.filter(r => r.נושא === filterTopic);
 
   const exportCols = ['נושא', 'מסמכים', 'משתתפים', 'מדריך', 'תאריך', 'בוצע'];
 
@@ -180,7 +218,13 @@ export default function Training() {
             </div>
           </div>
 
-          <div className="flex justify-end mb-3">
+          <div className="flex justify-between mb-3">
+            <button
+              onClick={() => setAddingTopic(true)}
+              className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700"
+            >
+              + הוסף נושא
+            </button>
             <button
               onClick={() => exportTablePDF('training', exportCols, topics.map(t => [t.נושא, t.מסמכים, t.משתתפים.join(', '), t.מדריך, t.תאריך, t.בוצע ? '✓' : '']))}
               className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
@@ -227,20 +271,65 @@ export default function Training() {
                     <input type="checkbox" checked={t.בוצע} onChange={e => updateTopic(i, 'בוצע', e.target.checked)} className="w-4 h-4" />
                   </td>
                   <td className="border border-[#999] px-2 py-1.5 text-center">
-                    {t.בוצע && t.תאריך && t.מדריך.trim() && t.משתתפים.length > 0 ? (
-                      <button
-                        onClick={() => confirmTraining(i)}
-                        disabled={confirmingIdx === i}
-                        className="bg-green-600 text-white px-3 py-0.5 rounded text-xs hover:bg-green-700 disabled:opacity-50"
-                      >
-                        {confirmingIdx === i ? '...' : 'אשר'}
-                      </button>
-                    ) : (
-                      <span className="text-gray-300 text-xs">—</span>
-                    )}
+                    <div className="flex flex-col items-center gap-1">
+                      {t.בוצע && t.תאריך && t.מדריך.trim() && t.משתתפים.length > 0 ? (
+                        <button
+                          onClick={() => confirmTraining(i)}
+                          disabled={confirmingIdx === i}
+                          className="bg-green-600 text-white px-3 py-0.5 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                        >
+                          {confirmingIdx === i ? '...' : 'אשר'}
+                        </button>
+                      ) : (
+                        <span className="text-gray-300 text-xs">—</span>
+                      )}
+                      {t._custom && (
+                        <button
+                          onClick={() => deleteTopic(i)}
+                          className="text-gray-300 hover:text-red-500 text-xs"
+                          title="מחק נושא"
+                        >מחק נושא</button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
+              {addingTopic && (
+                <tr className="bg-blue-50">
+                  <td className="border border-[#999] px-2 py-1.5" colSpan={2}>
+                    <div className="flex gap-2">
+                      <input
+                        autoFocus
+                        value={newTopic.נושא}
+                        onChange={e => setNewTopic(p => ({ ...p, נושא: e.target.value }))}
+                        placeholder="נושא הדרכה *"
+                        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 flex-1"
+                      />
+                      <input
+                        value={newTopic.מסמכים}
+                        onChange={e => setNewTopic(p => ({ ...p, מסמכים: e.target.value }))}
+                        placeholder="מסמכים (אופציונלי)"
+                        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 flex-1"
+                      />
+                    </div>
+                  </td>
+                  <td className="border border-[#999] px-2 py-1.5" colSpan={5}>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={saveNewTopic}
+                        disabled={savingTopic || !newTopic.נושא.trim()}
+                        className="bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {savingTopic ? 'שומר...' : 'שמור'}
+                      </button>
+                      <button
+                        onClick={() => { setAddingTopic(false); setNewTopic({ נושא: '', מסמכים: '' }); }}
+                        className="text-gray-500 text-xs hover:underline"
+                      >ביטול</button>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </>
@@ -248,11 +337,23 @@ export default function Training() {
 
       {view === 'history' && (
         <>
-          <div className="flex justify-between items-center mb-3">
-            <div className="text-sm text-gray-500">{sortedHistory.length} הדרכות בהיסטוריה</div>
+          <div className="flex flex-wrap gap-2 justify-between items-center mb-3">
+            <div className="flex items-center gap-2">
+              <div className="text-sm text-gray-500">{filteredHistory.length} הדרכות</div>
+              {uniqueTopics.length > 0 && (
+                <select
+                  value={filterTopic}
+                  onChange={e => setFilterTopic(e.target.value)}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none"
+                >
+                  <option value="all">כל הנושאים</option>
+                  {uniqueTopics.map(t => <option key={t} value={t}>{t}</option>)}
+                </select>
+              )}
+            </div>
             <button
               onClick={() => exportTablePDF('training', ['נושא', 'מסמכים', 'משתתפים', 'מדריך', 'תאריך', 'תאריך אישור'],
-                sortedHistory.map(r => [r.נושא, r.מסמכים, (r.משתתפים || []).join(', '), r.מדריך, r.תאריך,
+                filteredHistory.map(r => [r.נושא, r.מסמכים, (r.משתתפים || []).join(', '), r.מדריך, r.תאריך,
                   r.confirmedAt ? new Date(r.confirmedAt).toLocaleDateString('he-IL') : '']))}
               className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
             >
@@ -262,11 +363,13 @@ export default function Training() {
 
           {historySheet.loading && <div className="text-center text-gray-500 py-8">טוען...</div>}
 
-          {!historySheet.loading && sortedHistory.length === 0 && (
-            <div className="text-center text-gray-400 py-12 text-sm">אין הדרכות מאושרות עדיין</div>
+          {!historySheet.loading && filteredHistory.length === 0 && (
+            <div className="text-center text-gray-400 py-12 text-sm">
+              {filterTopic === 'all' ? 'אין הדרכות מאושרות עדיין' : `אין הדרכות לנושא: ${filterTopic}`}
+            </div>
           )}
 
-          {sortedHistory.length > 0 && (
+          {filteredHistory.length > 0 && (
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-[#D9D9D9] text-right">
@@ -280,7 +383,7 @@ export default function Training() {
                 </tr>
               </thead>
               <tbody>
-                {sortedHistory.map((r, i) => (
+                {filteredHistory.map((r, i) => (
                   <tr key={r._id} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
                     <td className="border border-[#999] px-3 py-1.5 font-medium">{r.נושא}</td>
                     <td className="border border-[#999] px-3 py-1.5 text-xs text-gray-600">{r.מסמכים}</td>
