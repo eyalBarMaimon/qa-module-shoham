@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
@@ -13,17 +13,80 @@ const DEFAULT_LAMPS = [
 ];
 
 const COLS = ['שם המכונה', 'מ. סידורי מכונה', 'סוג מנורה', 'תאריך החלפה', 'כמות פולסים', 'הערות'];
+const HIST_COLS = ['סוג מנורה', 'תאריך החלפה', 'כמות פולסים', 'הערות'];
 
+// ── History dialog ─────────────────────────────────────────────────────────────
+function LampHistoryDialog({ lamp, historyCol, onClose }) {
+  const records = useMemo(() =>
+    [...historyCol.data]
+      .filter(r => r.lamp_id === lamp._id)
+      .sort((a, b) => (b.recordedAt || '').localeCompare(a.recordedAt || '')),
+    [historyCol.data, lamp._id]
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[85vh] flex flex-col" dir="rtl">
+        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+          <div>
+            <div className="font-bold text-base">{lamp['שם המכונה']}</div>
+            <div className="text-xs text-gray-500">מ. סידורי: {lamp['מ. סידורי מכונה']}</div>
+          </div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-5 py-3">
+          <div className="font-semibold text-sm mb-2">היסטוריית החלפות</div>
+          {historyCol.loading && <div className="text-gray-400 text-sm">טוען...</div>}
+          {!historyCol.loading && records.length === 0 && (
+            <div className="text-gray-400 text-sm">אין החלפות קודמות — נרשמות בכל שמירה</div>
+          )}
+          {records.length > 0 && (
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="bg-gray-100 text-right">
+                  {HIST_COLS.map(c => (
+                    <th key={c} className="border border-gray-200 px-3 py-1.5 font-semibold">{c}</th>
+                  ))}
+                  <th className="border border-gray-200 px-3 py-1.5 font-semibold">נרשם בתאריך</th>
+                </tr>
+              </thead>
+              <tbody>
+                {records.map((r, i) => (
+                  <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    {HIST_COLS.map(c => (
+                      <td key={c} className="border border-gray-200 px-3 py-1.5">{r[c] || '—'}</td>
+                    ))}
+                    <td className="border border-gray-200 px-3 py-1.5 text-gray-400 text-xs" dir="ltr">
+                      {r.recordedAt ? new Date(r.recordedAt).toLocaleDateString('he-IL') : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function Lamps() {
-  const { data, loading, error, fetchSheet, updateRow, appendRow, deleteRow } = useCollection('Lamps');
-  const [rows, setRows] = useState(DEFAULT_LAMPS);
+  const lampsCol   = useCollection('Lamps');
+  const historyCol = useCollection('LampsHistory');
+  const [rows, setRows]       = useState(DEFAULT_LAMPS);
   const [editing, setEditing] = useState({});
-
-  useEffect(() => { fetchSheet(); }, []);
+  const [historyLamp, setHistoryLamp] = useState(null);
 
   useEffect(() => {
-    if (data.length > 0) setRows(data);
-  }, [data]);
+    lampsCol.fetchSheet();
+    historyCol.fetchSheet();
+  }, []);
+
+  useEffect(() => {
+    if (lampsCol.data.length > 0) setRows(lampsCol.data);
+  }, [lampsCol.data]);
 
   function handleEdit(i, field, val) {
     setRows(prev => prev.map((r, idx) => idx === i ? { ...r, [field]: val } : r));
@@ -32,10 +95,28 @@ export default function Lamps() {
 
   async function handleSave(i) {
     const r = rows[i];
-    if (r._id) await updateRow(r._id, r);
-    else await appendRow(r);
+    if (r._id) {
+      // Archive current state before overwriting
+      const prev = lampsCol.data.find(d => d._id === r._id);
+      if (prev) {
+        await historyCol.appendRow({
+          lamp_id:          r._id,
+          'שם המכונה':      prev['שם המכונה']      || '',
+          'מ. סידורי מכונה': prev['מ. סידורי מכונה'] || '',
+          'סוג מנורה':      prev['סוג מנורה']      || '',
+          'תאריך החלפה':    prev['תאריך החלפה']    || '',
+          'כמות פולסים':    prev['כמות פולסים']    || '',
+          'הערות':          prev['הערות']          || '',
+          recordedAt:       new Date().toISOString(),
+        });
+      }
+      await lampsCol.updateRow(r._id, r);
+    } else {
+      await lampsCol.appendRow(r);
+    }
     setEditing(e => { const n = { ...e }; delete n[i]; return n; });
-    fetchSheet();
+    lampsCol.fetchSheet();
+    historyCol.fetchSheet();
   }
 
   function addRow() {
@@ -44,7 +125,7 @@ export default function Lamps() {
 
   async function removeRow(i) {
     const r = rows[i];
-    if (r._id) await deleteRow(r._id);
+    if (r._id) await lampsCol.deleteRow(r._id);
     setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 
@@ -62,8 +143,8 @@ export default function Lamps() {
           ייצוא PDF
         </button>
       </div>
-      {loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
-      {error && <div className="text-red-500 text-sm mb-3">{error}</div>}
+      {lampsCol.loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
+      {lampsCol.error && <div className="text-red-500 text-sm mb-3">{lampsCol.error}</div>}
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
@@ -84,15 +165,33 @@ export default function Lamps() {
                 </td>
               ))}
               <td className="border border-[#999] px-2 py-1 text-center whitespace-nowrap">
-                {editing[i] && (
-                  <button onClick={() => handleSave(i)} className="text-green-700 text-xs ml-2 hover:underline">שמור</button>
-                )}
-                <button onClick={() => removeRow(i)} className="text-red-500 text-xs hover:underline">מחק</button>
+                <div className="flex flex-col items-center gap-1">
+                  {editing[i] && (
+                    <button onClick={() => handleSave(i)} className="text-green-700 text-xs hover:underline">שמור</button>
+                  )}
+                  {r._id && (
+                    <button
+                      onClick={() => { setHistoryLamp(r); historyCol.fetchSheet(); }}
+                      className="text-blue-600 text-xs hover:underline"
+                    >
+                      היסטוריה
+                    </button>
+                  )}
+                  <button onClick={() => removeRow(i)} className="text-red-400 text-xs hover:text-red-600 hover:underline">מחק</button>
+                </div>
               </td>
             </tr>
           ))}
         </tbody>
       </table>
+
+      {historyLamp && (
+        <LampHistoryDialog
+          lamp={historyLamp}
+          historyCol={historyCol}
+          onClose={() => setHistoryLamp(null)}
+        />
+      )}
     </div>
   );
 }
