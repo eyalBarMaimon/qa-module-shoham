@@ -303,9 +303,12 @@ export default function Tools() {
 
   async function handleDeactivate(row) {
     setTogglingId(row._id);
-    toolsCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
-    await toolsCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
-    setTogglingId(null);
+    try {
+      toolsCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
+      await toolsCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+    } finally {
+      setTogglingId(null);
+    }
   }
 
   async function handleAddTool(data) {

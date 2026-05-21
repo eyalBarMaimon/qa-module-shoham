@@ -243,8 +243,12 @@ export default function Machines() {
   }
 
   async function handleDeactivate(row) {
-    machinesCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
-    await machinesCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+    try {
+      machinesCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
+      await machinesCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+    } catch (e) {
+      await machinesCol.fetchSheet();
+    }
   }
 
   const filtered = useMemo(() =>
