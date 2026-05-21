@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
 import SortableHeader from '../components/SortableHeader';
@@ -6,6 +6,7 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
+import { buildFileName, uploadCalibrationFile } from '../utils/fileUpload';
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -101,6 +102,13 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
     בוצע_על_ידי: '',
   });
   const [saving, setSaving] = useState(false);
+  const [attachedFile, setAttachedFile] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const computedFileName = useMemo(() => {
+    if (!attachedFile) return '';
+    return buildFileName(form.תאריך_כיול || today, machine['מ. מכונה'], attachedFile);
+  }, [attachedFile, form.תאריך_כיול, machine, today]);
 
   async function handleSave() {
     setSaving(true);
@@ -120,6 +128,17 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
     const displayKiyul = toDisplay(form.תאריך_כיול);
     const displayNext  = toDisplay(form.מועד_הבא);
 
+    let fileUrl = '';
+    let fileName = '';
+    if (attachedFile && computedFileName) {
+      try {
+        fileUrl = await uploadCalibrationFile(attachedFile, 'machines', machine['שם'], computedFileName);
+        fileName = computedFileName;
+      } catch (err) {
+        console.error('File upload failed:', err);
+      }
+    }
+
     await historyCol.appendRow({
       machine_id:   machine._id,
       'מ. מכונה':  machine['מ. מכונה'],
@@ -127,6 +146,8 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
       'מועד הבא':   displayNext  || '—',
       'בוצע על ידי': form.בוצע_על_ידי || '—',
       recordedAt:   new Date().toISOString(),
+      fileUrl,
+      fileName,
     });
 
     machinesCol.setData(prev => prev.map(r =>
@@ -137,6 +158,8 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
     await machinesCol.updateRow(machine._id, { 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext });
     await historyCol.fetchSheet();
     setSaving(false);
+    setAttachedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
     setForm({ תאריך_כיול: form.תאריך_כיול, מועד_הבא: form.מועד_הבא, בוצע_על_ידי: '' });
   }
 
@@ -177,9 +200,24 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
                 className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-40" />
             </div>
           </div>
+          <div className="mt-3">
+            <label className="text-xs text-gray-500 block mb-1">צרף מסמך כיול (PDF / JPG)</label>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.jpg,.jpeg"
+              onChange={e => setAttachedFile(e.target.files[0] || null)}
+              className="text-sm text-gray-500 file:ml-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer"
+            />
+            {computedFileName && (
+              <div className="text-xs text-gray-500 mt-1">
+                שם קובץ: <span className="font-mono text-gray-700">{computedFileName}</span>
+              </div>
+            )}
+          </div>
           <button onClick={handleSave} disabled={saving || !form.תאריך_כיול}
             className="mt-3 bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'שומר...' : 'שמור כיול'}
+            {saving ? (attachedFile ? 'מעלה קובץ...' : 'שומר...') : 'שמור כיול'}
           </button>
         </div>
 
@@ -197,6 +235,7 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">מועד הבא</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">בוצע על ידי</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">נרשם בתאריך</th>
+                  <th className="border border-gray-200 px-3 py-1.5 font-semibold">מסמך</th>
                 </tr>
               </thead>
               <tbody>
@@ -212,6 +251,11 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
                       {r.recordedAt && r.recordedAt !== '2000-01-01T00:00:00.000Z'
                         ? new Date(r.recordedAt).toLocaleDateString('he-IL')
                         : '—'}
+                    </td>
+                    <td className="border border-gray-200 px-3 py-1.5 text-center">
+                      {r.fileUrl
+                        ? <a href={r.fileUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 text-xs hover:underline" title={r.fileName}>פתח</a>
+                        : <span className="text-gray-300">—</span>}
                     </td>
                   </tr>
                 ))}
