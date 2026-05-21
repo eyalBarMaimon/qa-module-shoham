@@ -10,8 +10,8 @@ export default function DocHeader({ tab }) {
     <div className="border border-[#999] mb-4 text-sm" dir="ltr">
       {/* Row 1 */}
       <div className="flex items-center border-b border-[#999] bg-white">
-        <div className="w-40 p-2 border-l border-[#999] flex items-center justify-center">
-          <img src={logo} alt="M. Shoham" className="h-32 object-contain" />
+        <div className="w-52 p-2 border-l border-[#999] flex items-center justify-center">
+          <img src={logo} alt="M. Shoham" className="h-44 object-contain" />
         </div>
         <div className="flex-1 text-center font-bold py-2 text-lg">
           Quality Assurance
