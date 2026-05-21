@@ -72,20 +72,32 @@ export async function exportTablePDF(tab, columns, rows) {
       </div>
     </div>`;
 
-  // Inject hidden element
+  // ── Inject into DOM ────────────────────────────────────────────────────────
   const wrapper = document.createElement('div');
   wrapper.style.cssText = 'position:fixed;left:-9999px;top:0;z-index:-1;background:#fff;';
   wrapper.innerHTML = html;
   document.body.appendChild(wrapper);
 
-  // Wait for logo
+  const element = wrapper.querySelector('#__pdf_export__');
+
+  // Wait for logo image
   const img = wrapper.querySelector('img');
   if (img && !img.complete) {
     await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; });
   }
 
-  // Render to canvas
-  const element = wrapper.querySelector('#__pdf_export__');
+  // ── Measure row boundaries BEFORE rendering (DOM positions in CSS px) ──────
+  const elementRect = element.getBoundingClientRect();
+  const elementCssH = elementRect.height;
+
+  // Collect the bottom edge of every <tr> in the data table
+  // (excluding the doc-header table rows — just the data tbody rows)
+  const dataTrs = [...element.querySelectorAll('table:last-of-type tr')];
+  const rowBottomsCss = dataTrs.map(tr =>
+    tr.getBoundingClientRect().bottom - elementRect.top
+  );
+
+  // ── Render to canvas ───────────────────────────────────────────────────────
   const canvas = await html2canvas(element, {
     scale: 2,
     useCORS: true,
@@ -95,35 +107,57 @@ export async function exportTablePDF(tab, columns, rows) {
 
   document.body.removeChild(wrapper);
 
-  // Build PDF with multi-page support
-  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
-  const margin   = 8;
-  const pageW    = doc.internal.pageSize.getWidth();
-  const pageH    = doc.internal.pageSize.getHeight();
-  const printW   = pageW - margin * 2;
-  const printH   = pageH - margin * 2;
+  // Scale factor: canvas pixels per CSS pixel
+  const scaleY   = canvas.height / elementCssH;
+  const rowBottomsPx = rowBottomsCss.map(y => Math.round(y * scaleY));
 
-  // pixels per mm
-  const pxPerMm  = canvas.width / printW;
-  const slicePx  = Math.floor(printH * pxPerMm);
-  const totalH   = canvas.height;
+  // ── Build PDF: slice canvas only at row boundaries ─────────────────────────
+  const doc    = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const margin = 8;
+  const pageW  = doc.internal.pageSize.getWidth();
+  const pageH  = doc.internal.pageSize.getHeight();
+  const printW = pageW - margin * 2;
+  const printH = pageH - margin * 2;
 
-  let yPx = 0;
+  const pxPerMm   = canvas.width / printW;
+  const slicePxMax = Math.floor(printH * pxPerMm); // max canvas px per page
+  const totalH     = canvas.height;
+
+  let yPx    = 0;
   let pageIdx = 0;
 
   while (yPx < totalH) {
     if (pageIdx > 0) doc.addPage();
 
-    const sliceH = Math.min(slicePx, totalH - yPx);
+    const targetEnd = yPx + slicePxMax;
+
+    // Find the last row boundary that fits within this page
+    // (must be strictly greater than yPx, and ≤ targetEnd)
+    const candidates = rowBottomsPx.filter(b => b > yPx && b <= targetEnd);
+    let sliceEnd = candidates.length > 0
+      ? Math.max(...candidates)
+      : targetEnd; // no row fits entirely — fall back to hard cut
+
+    // Ensure we always advance (avoid infinite loop)
+    if (sliceEnd <= yPx) sliceEnd = Math.min(yPx + slicePxMax, totalH);
+
+    // Clamp to total canvas height
+    sliceEnd = Math.min(sliceEnd, totalH);
+
+    const sliceH = sliceEnd - yPx;
     const sliceCanvas = document.createElement('canvas');
     sliceCanvas.width  = canvas.width;
     sliceCanvas.height = sliceH;
-    sliceCanvas.getContext('2d').drawImage(canvas, 0, yPx, canvas.width, sliceH, 0, 0, canvas.width, sliceH);
+    sliceCanvas.getContext('2d').drawImage(
+      canvas,
+      0, yPx, canvas.width, sliceH,
+      0, 0,   canvas.width, sliceH
+    );
 
-    const sliceImgH = (sliceH / pxPerMm);
+    const sliceImgH = sliceH / pxPerMm;
     doc.addImage(sliceCanvas.toDataURL('image/jpeg', 0.92), 'JPEG', margin, margin, printW, sliceImgH);
 
-    yPx += slicePx;
+    yPx = sliceEnd;
     pageIdx++;
   }
 
