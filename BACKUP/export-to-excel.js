@@ -90,19 +90,19 @@ async function main() {
       const snap = await getDocs(collection(db, col.id));
       const rows = snap.docs.map(d => cleanDoc(d.data()));
 
-      if (rows.length === 0) {
-        console.log('(ריק, דולג)');
-        continue;
+      const ws = rows.length > 0
+        ? XLSX.utils.json_to_sheet(rows, { cellDates: true })
+        : XLSX.utils.aoa_to_sheet([['אין נתונים']]);
+
+      if (rows.length > 0) {
+        const cols = Object.keys(rows[0]);
+        ws['!cols'] = cols.map(key => ({
+          wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2,
+        }));
       }
 
-      const ws = XLSX.utils.json_to_sheet(rows, { cellDates: true });
-      const cols = Object.keys(rows[0]);
-      ws['!cols'] = cols.map(key => ({
-        wch: Math.max(key.length, ...rows.map(r => String(r[key] ?? '').length)) + 2,
-      }));
-
       XLSX.utils.book_append_sheet(wb, ws, col.sheet);
-      console.log(`${rows.length} רשומות`);
+      console.log(rows.length > 0 ? `${rows.length} רשומות` : '(ריק)');
     } catch (err) {
       console.log(`שגיאה: ${err.message}`);
     }
