@@ -1,16 +1,30 @@
-# React + Vite
+# QA Module — M. Shoham Trading LTD.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+אפליקציית Web לניהול מודול איכות, המחליפה את ניהול הטפסים הידני ב-Word.
 
-Currently, two official plugins are available:
+**גרסה:** 1.0.1 | **Live:** https://eyalbarmaimon.github.io/qa-module-shoham/
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
+- React + Vite + Tailwind CSS
+- Firebase Firestore (DB)
+- GitHub Pages + GitHub Actions (hosting & deploy)
+- html2canvas + jsPDF (PDF export)
 
-## React Compiler
+## מודולים
+| מודול | תיאור |
+|-------|--------|
+| Dashboard | 6 כרטיסי סיכום + טבלת התראות |
+| כלי מדידה (F-7.6.1) | 53 פריטים, כיול, היסטוריה |
+| מערכות (F-7.6.1-1) | 13 מכונות לייזר |
+| פילטרים (F-7.6.1-2) | 14 פילטרים, תחזוקה רבעונית |
+| מנורות | יומן החלפת מנורות לייזר |
+| ספקים | 32 ספקים, ISO cert expiry |
+| הדרכות (F-6.2-2) | תכנית הדרכות שנתית |
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## פיתוח מקומי
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+> מסמך מפרט מלא: `../QA_MODULE_SPEC.md`
