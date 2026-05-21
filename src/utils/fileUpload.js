@@ -36,7 +36,7 @@ export async function uploadCalibrationFile(file, category, folderName, fileName
   formData.append('public_id', publicId);
 
   const uploadPromise = fetch(
-    `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`,
+    `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
     { method: 'POST', body: formData }
   ).then(async res => {
     if (!res.ok) {
