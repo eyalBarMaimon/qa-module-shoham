@@ -74,7 +74,7 @@ export async function exportTablePDF(tab, columns, rows) {
 
       <!-- Footer -->
       <div style="text-align:center;font-size:9px;color:#555;margin-top:6px;border-top:1px solid #ccc;padding-top:4px;">
-        QA Manager: Ilana Hofman &nbsp;|&nbsp; QC Manager: Sveta Matveev &nbsp;|&nbsp; v${APP_VERSION} &nbsp;|&nbsp; M. Shoham Trading LTD.
+        v${APP_VERSION} &nbsp;|&nbsp; M. Shoham Trading LTD.
       </div>
     </div>`;
 

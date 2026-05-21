@@ -16,9 +16,6 @@ export default function DocHeader({ tab }) {
         <div className="flex-1 text-center font-bold py-2">
           M. Shoham Trading LTD. / Quality Assurance
         </div>
-        <div className="w-24 p-2 text-center text-xs border-r border-[#999]">
-          v{APP_VERSION}
-        </div>
       </div>
       {/* Row 2 */}
       <div className="flex border-b border-[#999] bg-white text-xs">
