@@ -210,6 +210,7 @@ export default function Filters() {
       </div>
       {filtersCol.loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
       {filtersCol.error && <div className="text-red-500 text-sm mb-3">{filtersCol.error}</div>}
+      <div className="overflow-x-auto">
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
@@ -248,6 +249,7 @@ export default function Filters() {
           )}
         </tbody>
       </table>
+      </div>
 
       {activeFilter && (
         <FilterDialog

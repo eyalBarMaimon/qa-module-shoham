@@ -225,6 +225,7 @@ export default function Training() {
             </button>
           </div>
 
+          <div className="overflow-x-auto">
           <table className="w-full text-sm border-collapse">
             <thead>
               <tr className="bg-[#D9D9D9] text-right">
@@ -324,6 +325,7 @@ export default function Training() {
               )}
             </tbody>
           </table>
+          </div>
         </>
       )}
 
@@ -362,6 +364,7 @@ export default function Training() {
           )}
 
           {filteredHistory.length > 0 && (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm border-collapse">
               <thead>
                 <tr className="bg-[#D9D9D9] text-right">
@@ -402,6 +405,7 @@ export default function Training() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </>
       )}

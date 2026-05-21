@@ -10,7 +10,7 @@ const TABS = [
 
 export default function TabNav({ active, onChange }) {
   return (
-    <div className="flex flex-wrap gap-1 mb-4 border-b border-gray-300 pb-1">
+    <div className="flex overflow-x-auto gap-1 mb-4 border-b border-gray-300 pb-1 whitespace-nowrap">
       {TABS.map(t => (
         <button
           key={t.id}

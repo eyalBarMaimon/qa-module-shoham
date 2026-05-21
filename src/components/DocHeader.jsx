@@ -11,13 +11,13 @@ export default function DocHeader({ tab }) {
       <div className="flex items-stretch bg-white">
 
         {/* Logo */}
-        <div className="w-52 p-2 border-l border-[#999] flex items-center justify-center shrink-0">
-          <img src={logo} alt="M. Shoham" className="h-44 object-contain" />
+        <div className="w-20 sm:w-52 p-2 border-l border-[#999] flex items-center justify-center shrink-0">
+          <img src={logo} alt="M. Shoham" className="h-14 sm:h-44 object-contain" />
         </div>
 
         {/* Right side: title + meta + subject */}
         <div className="flex-1 flex flex-col justify-between">
-          <div className="flex-1 flex items-center justify-center font-bold text-xl px-4">
+          <div className="flex-1 flex items-center justify-center font-bold text-base sm:text-xl px-2 sm:px-4">
             Quality Assurance
           </div>
           <div className="border-t border-[#999] flex text-xs text-gray-600">

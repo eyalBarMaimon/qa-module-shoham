@@ -69,7 +69,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-gray-100">
       <DemoWatermark />
-      <div className="max-w-7xl mx-auto p-4">
+      <div className="max-w-7xl mx-auto p-2 sm:p-4">
         <div className="flex justify-end items-center mb-3">
           <button
             onClick={() => { localStorage.removeItem('qa_auth'); setAuthed(false); }}
@@ -79,7 +79,7 @@ export default function App() {
           </button>
         </div>
         <TabNav active={tab} onChange={setTab} />
-        <div className="bg-white rounded shadow p-4">
+        <div className="bg-white rounded shadow p-2 sm:p-4">
           <Page />
         </div>
         <DocFooter />

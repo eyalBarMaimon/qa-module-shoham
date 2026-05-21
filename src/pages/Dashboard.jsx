@@ -76,6 +76,7 @@ export default function Dashboard() {
         </div>
       )}
       {alerts.length > 0 && (
+        <div className="overflow-x-auto">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-[#D9D9D9] text-right">
@@ -96,6 +97,7 @@ export default function Dashboard() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );
