@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import EditableDateCell from '../components/EditableDateCell';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { exportTablePDF } from '../utils/exportPDF';
 
 export default function Machines() {
-  const { data, loading, error, fetchSheet } = useSheets('Machines');
+  const { data, loading, error, fetchSheet, updateRow, setData } = useSheets('Machines');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => { fetchSheet(); }, []);
@@ -16,6 +17,11 @@ export default function Machines() {
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'machines') }))
       .filter(r => filterStatus === 'all' || r._status === filterStatus),
     [data, filterStatus]);
+
+  async function saveDate(docId, field, newVal) {
+    setData(prev => prev.map(r => r._id === docId ? { ...r, [field]: newVal } : r));
+    await updateRow(docId, { [field]: newVal });
+  }
 
   const cols = ['מ. מכונה', 'שם', 'יצרן', 'תאריך כיול', 'מועד הבא', 'מיקום', 'סטטוס'];
 
@@ -51,12 +57,16 @@ export default function Machines() {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
+            <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['מ. מכונה']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['יצרן']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['תאריך כיול']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
+              <td className="border border-[#999] px-2 py-1">
+                <EditableDateCell value={r['תאריך כיול']} onSave={v => saveDate(r._id, 'תאריך כיול', v)} />
+              </td>
+              <td className="border border-[#999] px-2 py-1">
+                <EditableDateCell value={r['מועד הבא']} onSave={v => saveDate(r._id, 'מועד הבא', v)} />
+              </td>
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
             </tr>

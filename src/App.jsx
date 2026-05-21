@@ -3,6 +3,7 @@ import { APP_PASSWORD } from './utils/constants';
 import TabNav from './components/TabNav';
 import DocFooter from './components/DocFooter';
 import DemoWatermark from './components/DemoWatermark';
+import logo from './assets/logo.jpeg';
 import Dashboard from './pages/Dashboard';
 import Tools from './pages/Tools';
 import Machines from './pages/Machines';
@@ -73,7 +74,7 @@ export default function App() {
       {isDemo && <DemoWatermark />}
       <div className="max-w-7xl mx-auto p-4">
         <div className="flex justify-between items-center mb-3">
-          <div className="text-lg font-bold text-gray-800">מודול איכות — M. Shoham Trading LTD.</div>
+          <img src={logo} alt="M. Shoham" className="h-28 object-contain" />
           <button
             onClick={() => { localStorage.removeItem('qa_auth'); setAuthed(false); }}
             className="text-xs text-gray-400 hover:text-gray-600"

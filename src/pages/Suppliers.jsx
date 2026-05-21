@@ -1,13 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import EditableDateCell from '../components/EditableDateCell';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { exportTablePDF } from '../utils/exportPDF';
 
 export default function Suppliers() {
-  const { data, loading, error, fetchSheet } = useSheets('Suppliers');
-  const [search, setSearch] = useState('');
+  const { data, loading, error, fetchSheet, updateRow, setData } = useSheets('Suppliers');
+  const [search, setSearch]             = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => { fetchSheet(); }, []);
@@ -22,6 +23,11 @@ export default function Suppliers() {
         return matchSearch && matchStatus;
       }),
     [data, search, filterStatus]);
+
+  async function saveDate(docId, field, newVal) {
+    setData(prev => prev.map(r => r._id === docId ? { ...r, [field]: newVal } : r));
+    await updateRow(docId, { [field]: newVal });
+  }
 
   const cols = ['#', 'שם ספק', 'תעודת ISO', 'תוקף עד', 'הערות', 'סטטוס'];
 
@@ -63,11 +69,13 @@ export default function Suppliers() {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
+            <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם ספק']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תעודת ISO']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['תוקף עד']}</td>
+              <td className="border border-[#999] px-2 py-1">
+                <EditableDateCell value={r['תוקף עד']} onSave={v => saveDate(r._id, 'תוקף עד', v)} />
+              </td>
               <td className="border border-[#999] px-3 py-1.5">{r['הערות']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
             </tr>
