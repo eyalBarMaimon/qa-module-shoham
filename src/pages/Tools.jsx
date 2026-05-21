@@ -9,6 +9,60 @@ import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadCalibrationFile } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
 
+// ── Edit tool dialog ──────────────────────────────────────────────────────────
+function EditToolDialog({ tool, onClose, onSave }) {
+  const [form, setForm] = useState({
+    '#':           tool['#']           || '',
+    'שם המכשיר':  tool['שם המכשיר']  || '',
+    'מספר סידורי': tool['מספר סידורי'] || '',
+    'תחום מדידה':  tool['תחום מדידה']  || '',
+    'מיקום':       tool['מיקום']       || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    if (!form['שם המכשיר'].trim()) return;
+    setSaving(true);
+    await onSave(tool._id, form);
+    setSaving(false);
+    onClose();
+  }
+
+  const field = (label, key, dir = 'rtl') => (
+    <div>
+      <label className="text-xs text-gray-500 block mb-1">{label}</label>
+      <input type="text" value={form[key]} dir={dir}
+        onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+        className="border border-gray-300 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-400 w-full" />
+    </div>
+  );
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded shadow-xl w-full max-w-lg" dir="rtl">
+        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+          <div className="font-bold text-base">עריכת פרטי מכשיר</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <div className="px-5 py-4 grid grid-cols-2 gap-3">
+          <div className="col-span-2">{field('שם המכשיר *', 'שם המכשיר')}</div>
+          {field('מספר סידורי', 'מספר סידורי')}
+          {field('תחום מדידה', 'תחום מדידה')}
+          {field('#', '#', 'ltr')}
+          <div>{field('מיקום', 'מיקום')}</div>
+        </div>
+        <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">ביטול</button>
+          <button onClick={handleSave} disabled={saving || !form['שם המכשיר'].trim()}
+            className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+            {saving ? 'שומר...' : 'שמור שינויים'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Add tool dialog ───────────────────────────────────────────────────────────
 function AddToolDialog({ onClose, onSave }) {
   const today = new Date().toISOString().slice(0, 10);
@@ -333,6 +387,7 @@ export default function Tools() {
   const [search, setSearch]           = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [activeTool, setActiveTool]   = useState(null);
+  const [editTool, setEditTool]       = useState(null);
   const [togglingId, setTogglingId]   = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -360,6 +415,11 @@ export default function Tools() {
   async function handleAddTool(data) {
     await toolsCol.appendRow(data);
     await toolsCol.fetchSheet();
+  }
+
+  async function handleEditTool(id, data) {
+    toolsCol.setData(prev => prev.map(r => r._id === id ? { ...r, ...data } : r));
+    await toolsCol.updateRow(id, data);
   }
 
   const filtered = useMemo(() => {
@@ -454,6 +514,12 @@ export default function Tools() {
                   >
                     עדכן / היסטוריה
                   </button>
+                  <button
+                    onClick={() => setEditTool(r)}
+                    className="text-gray-500 text-xs hover:text-blue-600 hover:underline whitespace-nowrap"
+                  >
+                    ערוך פרטים
+                  </button>
                   {r._status === 'gray' ? (
                     <button onClick={() => setActiveTool(r)}
                       className="text-green-700 text-xs hover:underline whitespace-nowrap">
@@ -483,6 +549,14 @@ export default function Tools() {
           historyCol={historyCol}
           toolsCol={toolsCol}
           employees={employees}
+        />
+      )}
+
+      {editTool && (
+        <EditToolDialog
+          tool={editTool}
+          onClose={() => setEditTool(null)}
+          onSave={handleEditTool}
         />
       )}
 
