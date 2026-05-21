@@ -59,11 +59,19 @@ function Login({ onLogin }) {
   );
 }
 
-const isDemo = new URLSearchParams(window.location.search).has('demo');
-
 export default function App() {
   const [authed, setAuthed] = useState(() => localStorage.getItem('qa_auth') === '1');
-  const [tab, setTab] = useState('dashboard');
+  const [tab, setTab]       = useState('dashboard');
+  const [demo, setDemo]     = useState(() =>
+    new URLSearchParams(window.location.search).has('demo') ||
+    localStorage.getItem('qa_demo') === '1'
+  );
+
+  function toggleDemo() {
+    const next = !demo;
+    setDemo(next);
+    next ? localStorage.setItem('qa_demo', '1') : localStorage.removeItem('qa_demo');
+  }
 
   if (!authed) return <Login onLogin={() => setAuthed(true)} />;
 
@@ -71,9 +79,16 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {isDemo && <DemoWatermark />}
+      {demo && <DemoWatermark />}
       <div className="max-w-7xl mx-auto p-4">
-        <div className="flex justify-end items-center mb-3">
+        <div className="flex justify-end items-center gap-3 mb-3">
+          <button
+            onClick={toggleDemo}
+            className={`text-xs px-2 py-0.5 rounded border ${demo ? 'border-orange-400 text-orange-500 bg-orange-50' : 'border-gray-300 text-gray-400 hover:text-gray-600'}`}
+            title="הפעל/כבה DEMO Watermark"
+          >
+            DEMO
+          </button>
           <button
             onClick={() => { localStorage.removeItem('qa_auth'); setAuthed(false); }}
             className="text-xs text-gray-400 hover:text-gray-600"
