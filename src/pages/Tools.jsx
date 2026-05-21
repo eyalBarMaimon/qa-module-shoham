@@ -289,7 +289,6 @@ export default function Tools() {
   const [activeTool, setActiveTool]   = useState(null);
   const [togglingId, setTogglingId]   = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [showHidden, setShowHidden]   = useState(false);
 
   useEffect(() => {
     toolsCol.fetchSheet();
@@ -309,23 +308,10 @@ export default function Tools() {
     setTogglingId(null);
   }
 
-  async function handleToggleHidden(row) {
-    const nowHidden = row.hidden !== 'true';
-    setTogglingId(row._id);
-    toolsCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, hidden: nowHidden ? 'true' : '' } : r));
-    await toolsCol.updateRow(row._id, { hidden: nowHidden ? 'true' : '' });
-    setTogglingId(null);
-  }
-
   async function handleAddTool(data) {
     await toolsCol.appendRow(data);
     await toolsCol.fetchSheet();
   }
-
-  const hiddenCount = useMemo(() =>
-    toolsCol.data.filter(r => r.hidden === 'true').length,
-    [toolsCol.data]
-  );
 
   const filtered = useMemo(() => {
     const seen = new Set();
@@ -336,7 +322,6 @@ export default function Tools() {
         if (num) seen.add(num);
         return true;
       })
-      .filter(r => showHidden || r.hidden !== 'true')
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'tools') }))
       .filter(r => {
         const q = search.toLowerCase();
@@ -344,7 +329,7 @@ export default function Tools() {
         const matchStatus = filterStatus === 'all' || r._status === filterStatus;
         return matchSearch && matchStatus;
       });
-  }, [toolsCol.data, search, filterStatus, showHidden]);
+  }, [toolsCol.data, search, filterStatus]);
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
@@ -371,14 +356,6 @@ export default function Tools() {
           <option value="green">תקין</option>
           <option value="gray">לא פעיל</option>
         </select>
-        {hiddenCount > 0 && (
-          <button
-            onClick={() => setShowHidden(s => !s)}
-            className={`px-3 py-1.5 rounded text-sm border ${showHidden ? 'bg-yellow-100 border-yellow-400 text-yellow-800' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'}`}
-          >
-            {showHidden ? `מסתיר מוסתרים (${hiddenCount})` : `הצג מוסתרים (${hiddenCount})`}
-          </button>
-        )}
         <button
           onClick={() => setShowAddDialog(true)}
           className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700"
@@ -411,9 +388,7 @@ export default function Tools() {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={r._id || i}
-              className={`${i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'} ${r.hidden === 'true' ? 'opacity-50' : ''}`}
-            >
+            <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם המכשיר']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מספר סידורי']}</td>
@@ -440,13 +415,6 @@ export default function Tools() {
                       {togglingId === r._id ? '...' : 'השבת'}
                     </button>
                   )}
-                  <button
-                    onClick={() => handleToggleHidden(r)}
-                    disabled={togglingId === r._id}
-                    className="text-gray-300 text-xs hover:text-gray-600 hover:underline whitespace-nowrap disabled:opacity-50"
-                  >
-                    {r.hidden === 'true' ? 'הצג' : 'הסתר'}
-                  </button>
                 </div>
               </td>
             </tr>
