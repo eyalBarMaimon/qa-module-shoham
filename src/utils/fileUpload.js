@@ -2,12 +2,11 @@ const UPLOAD_TIMEOUT_MS = 20000;
 
 // Builds filename: YYYYMMDD_serialnumber.ext
 // e.g. 20260615_B21019951.pdf
-export function buildFileName(dateISO, identifier, file) {
+export function buildFileName(dateISO, identifier) {
   const [y, m, d] = (dateISO || '').split('-');
   const dateStr = (y && m && d) ? `${y}${m}${d}` : 'NA';
   const cleanId = String(identifier || '').replace(/[^a-zA-Z0-9]/g, '');
-  const ext = file.name.split('.').pop().toLowerCase();
-  return `${dateStr}_${cleanId}.${ext}`;
+  return `${dateStr}_${cleanId}`;
 }
 
 function withTimeout(promise, ms) {

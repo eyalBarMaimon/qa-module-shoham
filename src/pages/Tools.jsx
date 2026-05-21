@@ -164,7 +164,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   const computedFileName = useMemo(() => {
     if (!attachedFile) return '';
     const dateISO = naMode ? today : (form.תאריך || today);
-    return buildFileName(dateISO, tool['מספר סידורי'], attachedFile);
+    return buildFileName(dateISO, tool['מספר סידורי']);
   }, [attachedFile, form.תאריך, naMode, tool, today]);
 
   useEffect(() => {

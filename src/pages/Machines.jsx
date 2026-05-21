@@ -161,7 +161,7 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
 
   const computedFileName = useMemo(() => {
     if (!attachedFile) return '';
-    return buildFileName(form.תאריך_כיול || today, machine['מ. מכונה'], attachedFile);
+    return buildFileName(form.תאריך_כיול || today, machine['מ. מכונה']);
   }, [attachedFile, form.תאריך_כיול, machine, today]);
 
   async function handleSave() {
