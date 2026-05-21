@@ -25,6 +25,12 @@ function AddSupplierDialog({ onClose, onSave }) {
   const [form, setForm] = useState({ 'שם ספק': '', 'סוג הסמכה': '', 'תוקף עד': '', 'הערות': '' });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   async function handleSave() {
     if (!form['שם ספק'].trim()) return;
     setSaving(true);
@@ -34,8 +40,8 @@ function AddSupplierDialog({ onClose, onSave }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-md" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-md" dir="rtl" onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div className="font-bold text-base">הוספת ספק חדש</div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
@@ -98,6 +104,12 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
   });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   async function handleSave() {
     setSaving(true);
 
@@ -133,8 +145,8 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl">
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
 
         <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
           <div>
