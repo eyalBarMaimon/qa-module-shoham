@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "export": "node scripts/export-to-excel.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "firebase": "^12.13.0",
