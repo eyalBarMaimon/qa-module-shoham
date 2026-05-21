@@ -39,7 +39,7 @@ jobs:
           VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
           VITE_FIREBASE_APP_ID:             ${{ secrets.VITE_FIREBASE_APP_ID }}
           VITE_APP_PASSWORD:                ${{ secrets.VITE_APP_PASSWORD }}
-          VITE_APP_VERSION:                 ${{ secrets.VITE_APP_VERSION }}
+          VITE_APP_VERSION:                 '1.0.1'
         run: npm run build
 
       - name: Upload artifact
