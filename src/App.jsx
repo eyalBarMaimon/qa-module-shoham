@@ -40,8 +40,8 @@ function Login({ onLogin }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow w-80 text-center">
-        <div className="text-xl font-bold mb-2">מודול איכות</div>
-        <div className="text-sm text-gray-500 mb-6">M. Shoham Trading LTD.</div>
+        <img src={logo} alt="M. Shoham" className="h-24 object-contain mx-auto mb-4" />
+        <div className="text-sm text-gray-500 mb-6">Quality Assurance</div>
         <input
           type="password"
           value={pw}
