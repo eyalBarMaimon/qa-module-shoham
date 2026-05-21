@@ -1,8 +1,10 @@
 import { useEffect, useState, useMemo, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import SortableHeader from '../components/SortableHeader';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
+import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 
 // ── Add tool dialog ───────────────────────────────────────────────────────────
@@ -281,7 +283,7 @@ export default function Tools() {
     [toolsCol.data]
   );
 
-  const rows = useMemo(() => {
+  const filtered = useMemo(() => {
     return toolsCol.data
       .filter(r => showHidden || r.hidden !== 'true')
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'tools') }))
@@ -292,6 +294,8 @@ export default function Tools() {
         return matchSearch && matchStatus;
       });
   }, [toolsCol.data, search, filterStatus, showHidden]);
+
+  const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
   const cols = ['#', 'שם המכשיר', 'מספר סידורי', 'תאריך בדיקה', 'מועד הבא', 'מיקום', 'סטטוס'];
 
@@ -344,7 +348,13 @@ export default function Tools() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {cols.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
+            <th className="border border-[#999] px-3 py-2 font-bold">#</th>
+            <SortableHeader col="שם המכשיר"  label="שם המכשיר"  sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">מספר סידורי</th>
+            <SortableHeader col="תאריך בדיקה" label="תאריך בדיקה" sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מועד הבא"    label="מועד הבא"    sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מיקום"        label="מיקום"        sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
             <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
         </thead>

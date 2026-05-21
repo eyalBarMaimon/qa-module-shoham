@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import SortableHeader from '../components/SortableHeader';
 import EditableDateCell from '../components/EditableDateCell';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
+import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 
 export default function Machines() {
@@ -12,11 +14,13 @@ export default function Machines() {
 
   useEffect(() => { fetchSheet(); }, []);
 
-  const rows = useMemo(() =>
+  const filtered = useMemo(() =>
     data
       .map(r => ({ ...r, _status: calcStatus(r['מועד הבא'], 'machines') }))
       .filter(r => filterStatus === 'all' || r._status === filterStatus),
     [data, filterStatus]);
+
+  const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
   async function saveDate(docId, field, newVal) {
     setData(prev => prev.map(r => r._id === docId ? { ...r, [field]: newVal } : r));
@@ -52,7 +56,13 @@ export default function Machines() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {cols.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
+            <th className="border border-[#999] px-3 py-2 font-bold">מ. מכונה</th>
+            <SortableHeader col="שם"          label="שם"          sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">יצרן</th>
+            <SortableHeader col="תאריך כיול"  label="תאריך כיול"  sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מועד הבא"    label="מועד הבא"    sort={sort} onSort={toggleSort} />
+            <SortableHeader col="מיקום"        label="מיקום"        sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
           </tr>
         </thead>
         <tbody>

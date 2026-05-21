@@ -1,9 +1,11 @@
 import { useEffect, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import SortableHeader from '../components/SortableHeader';
 import EditableDateCell from '../components/EditableDateCell';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcFilterStatus } from '../hooks/useStatus';
+import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 
 export default function Filters() {
@@ -11,9 +13,11 @@ export default function Filters() {
 
   useEffect(() => { fetchSheet(); }, []);
 
-  const rows = useMemo(() =>
+  const filtered = useMemo(() =>
     data.map(r => ({ ...r, _status: calcFilterStatus(r['תאריך אחרון'], r['תדירות']) })),
     [data]);
+
+  const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
   async function saveDate(docId, field, newVal) {
     setData(prev => prev.map(r => r._id === docId ? { ...r, [field]: newVal } : r));
@@ -38,7 +42,13 @@ export default function Filters() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {cols.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
+            <th className="border border-[#999] px-3 py-2 font-bold">מ. פילטר</th>
+            <SortableHeader col="מכונה"        label="מכונה"        sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">מ. מכונה</th>
+            <SortableHeader col="מיקום"        label="מיקום"        sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">תדירות</th>
+            <SortableHeader col="תאריך אחרון"  label="תאריך אחרון"  sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
           </tr>
         </thead>
         <tbody>

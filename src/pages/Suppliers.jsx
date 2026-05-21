@@ -1,9 +1,11 @@
 import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
+import SortableHeader from '../components/SortableHeader';
 import EditableDateCell from '../components/EditableDateCell';
 import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
+import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 
 export default function Suppliers() {
@@ -13,7 +15,7 @@ export default function Suppliers() {
 
   useEffect(() => { fetchSheet(); }, []);
 
-  const rows = useMemo(() =>
+  const filtered = useMemo(() =>
     data
       .map(r => ({ ...r, _status: calcStatus(r['תוקף עד'], 'suppliers') }))
       .filter(r => {
@@ -23,6 +25,8 @@ export default function Suppliers() {
         return matchSearch && matchStatus;
       }),
     [data, search, filterStatus]);
+
+  const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
   async function saveDate(docId, field, newVal) {
     setData(prev => prev.map(r => r._id === docId ? { ...r, [field]: newVal } : r));
@@ -64,7 +68,12 @@ export default function Suppliers() {
       <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {cols.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold">{c}</th>)}
+            <th className="border border-[#999] px-3 py-2 font-bold">#</th>
+            <SortableHeader col="שם ספק"    label="שם ספק"    sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">תעודת ISO</th>
+            <SortableHeader col="תוקף עד"   label="תוקף עד"   sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-3 py-2 font-bold">הערות</th>
+            <th className="border border-[#999] px-3 py-2 font-bold">סטטוס</th>
           </tr>
         </thead>
         <tbody>
