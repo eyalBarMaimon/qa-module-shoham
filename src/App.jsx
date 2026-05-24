@@ -78,7 +78,7 @@ export default function App() {
         </div>
         <TabNav active={tab} onChange={setTab} />
         <div className="bg-white rounded shadow p-2 sm:p-4">
-          <Page />
+          <Page onNavigate={setTab} />
         </div>
         <DocFooter />
       </div>

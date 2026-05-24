@@ -15,7 +15,7 @@ function SummaryCard({ label, count, color }) {
   );
 }
 
-export default function Dashboard() {
+export default function Dashboard({ onNavigate }) {
   const tools     = useSheets('Tools');
   const suppliers = useSheets('Suppliers');
   const machines  = useSheets('Machines');
@@ -38,17 +38,17 @@ export default function Dashboard() {
     tools.data.forEach(r => {
       const s = calcStatus(r['מועד הבא'], 'tools');
       if (s === 'red' || s === 'amber')
-        rows.push({ category: 'כלי מדידה', name: r['שם המכשיר'] || r['שם'], next: r['מועד הבא'], status: s });
+        rows.push({ category: 'כלי מדידה', name: r['שם המכשיר'] || r['שם'], next: r['מועד הבא'], status: s, tab: 'tools' });
     });
     suppliers.data.forEach(r => {
       const s = calcStatus(r['תוקף עד'], 'suppliers');
       if (s === 'red' || s === 'amber')
-        rows.push({ category: 'ספק', name: r['שם ספק'], next: r['תוקף עד'], status: s });
+        rows.push({ category: 'ספק', name: r['שם ספק'], next: r['תוקף עד'], status: s, tab: 'suppliers' });
     });
     machines.data.forEach(r => {
       const s = calcStatus(r['מועד הבא'], 'machines');
       if (s === 'red' || s === 'amber')
-        rows.push({ category: 'מערכת', name: r['שם'], next: r['מועד הבא'], status: s });
+        rows.push({ category: 'מערכת', name: r['שם'], next: r['מועד הבא'], status: s, tab: 'machines' });
     });
     return rows.sort((a, b) => {
       if (a.status === b.status) return 0;
@@ -93,7 +93,16 @@ export default function Dashboard() {
             {alerts.map((a, i) => (
               <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
                 <td className="border border-[#999] px-3 py-1.5">{a.category}</td>
-                <td className="border border-[#999] px-3 py-1.5">{a.name}</td>
+                <td className="border border-[#999] px-3 py-1.5">
+                  {onNavigate ? (
+                    <button
+                      onClick={() => onNavigate(a.tab)}
+                      className="text-blue-700 hover:underline text-right w-full"
+                    >
+                      {a.name}
+                    </button>
+                  ) : a.name}
+                </td>
                 <td className="border border-[#999] px-3 py-1.5">{a.next}</td>
                 <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={a.status} /></td>
               </tr>
