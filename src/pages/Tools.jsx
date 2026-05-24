@@ -418,7 +418,8 @@ export default function Tools({ autoOpen, onAutoOpened }) {
   useEffect(() => {
     if (!autoOpen || toolsCol.data.length === 0) return;
     const match = toolsCol.data.find(r => (r['שם המכשיר'] || r['שם']) === autoOpen);
-    if (match) { setActiveTool(match); onAutoOpened?.(); }
+    if (match) setActiveTool(match);
+    onAutoOpened?.();
   }, [autoOpen, toolsCol.data]);
 
   const employees = useMemo(() =>
