@@ -219,7 +219,7 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function Suppliers() {
+export default function Suppliers({ autoOpen, onAutoOpened }) {
   const suppliersCol = useSheets('Suppliers');
   const historyCol   = useSheets('SuppliersHistory');
   const [search, setSearch]             = useState('');
@@ -231,6 +231,12 @@ export default function Suppliers() {
     suppliersCol.fetchSheet();
     historyCol.fetchSheet();
   }, []);
+
+  useEffect(() => {
+    if (!autoOpen || suppliersCol.data.length === 0) return;
+    const match = suppliersCol.data.find(r => r['שם ספק'] === autoOpen);
+    if (match) { setActiveSup(match); onAutoOpened?.(); }
+  }, [autoOpen, suppliersCol.data]);
 
   async function handleAddSupplier(data) {
     await suppliersCol.appendRow(data);

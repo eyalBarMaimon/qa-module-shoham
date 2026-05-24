@@ -61,9 +61,16 @@ function Login({ onLogin }) {
 export default function App() {
   const [authed, setAuthed] = useState(() => localStorage.getItem('qa_auth') === '1');
   const [tab, setTab]       = useState('dashboard');
+  const [autoOpen, setAutoOpen] = useState(null);
+
   if (!authed) return <Login onLogin={() => setAuthed(true)} />;
 
   const Page = PAGES[tab] || Dashboard;
+
+  function handleNavigate(newTab, deviceName = null) {
+    setTab(newTab);
+    setAutoOpen(deviceName || null);
+  }
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -76,9 +83,9 @@ export default function App() {
             יציאה
           </button>
         </div>
-        <TabNav active={tab} onChange={setTab} />
+        <TabNav active={tab} onChange={newTab => { setTab(newTab); setAutoOpen(null); }} />
         <div className="bg-white rounded shadow p-2 sm:p-4">
-          <Page onNavigate={setTab} />
+          <Page onNavigate={handleNavigate} autoOpen={autoOpen} onAutoOpened={() => setAutoOpen(null)} />
         </div>
         <DocFooter />
       </div>
