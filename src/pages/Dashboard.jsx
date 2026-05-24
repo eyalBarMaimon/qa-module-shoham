@@ -96,7 +96,7 @@ export default function Dashboard({ onNavigate }) {
                 <td className="border border-[#999] px-3 py-1.5">
                   {onNavigate ? (
                     <button
-                      onClick={() => onNavigate(a.tab)}
+                      onClick={() => onNavigate(a.tab, a.name)}
                       className="text-blue-700 hover:underline text-right w-full"
                     >
                       {a.name}

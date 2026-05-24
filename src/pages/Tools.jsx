@@ -397,7 +397,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function Tools() {
+export default function Tools({ autoOpen, onAutoOpened }) {
   const toolsCol   = useSheets('Tools');
   const historyCol = useSheets('ToolsHistory');
   const empCol     = useSheets('Employees');
@@ -414,6 +414,12 @@ export default function Tools() {
     historyCol.fetchSheet();
     empCol.fetchSheet();
   }, []);
+
+  useEffect(() => {
+    if (!autoOpen || toolsCol.data.length === 0) return;
+    const match = toolsCol.data.find(r => (r['שם המכשיר'] || r['שם']) === autoOpen);
+    if (match) { setActiveTool(match); onAutoOpened?.(); }
+  }, [autoOpen, toolsCol.data]);
 
   const employees = useMemo(() =>
     empCol.data.map(r => r['שם'] || Object.values(r).find(v => v && v !== r._id)).filter(Boolean),

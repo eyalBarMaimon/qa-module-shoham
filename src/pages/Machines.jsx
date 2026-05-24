@@ -341,7 +341,7 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function Machines() {
+export default function Machines({ autoOpen, onAutoOpened }) {
   const machinesCol = useSheets('Machines');
   const historyCol  = useSheets('MachinesHistory');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -353,6 +353,12 @@ export default function Machines() {
     machinesCol.fetchSheet();
     historyCol.fetchSheet();
   }, []);
+
+  useEffect(() => {
+    if (!autoOpen || machinesCol.data.length === 0) return;
+    const match = machinesCol.data.find(r => r['שם'] === autoOpen);
+    if (match) { setActiveMachine(match); onAutoOpened?.(); }
+  }, [autoOpen, machinesCol.data]);
 
   async function handleAddMachine(data) {
     await machinesCol.appendRow(data);
