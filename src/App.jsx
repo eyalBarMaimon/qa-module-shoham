@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { installTableClipboard } from './utils/tableClipboard';
 import { APP_PASSWORD } from './utils/constants';
 import TabNav from './components/TabNav';
 import DocFooter from './components/DocFooter';
@@ -62,6 +63,8 @@ export default function App() {
   const [authed, setAuthed] = useState(() => localStorage.getItem('qa_auth') === '1');
   const [tab, setTab]       = useState('dashboard');
   const [autoOpen, setAutoOpen] = useState(null);
+
+  useEffect(() => installTableClipboard(), []);
 
   if (!authed) return <Login onLogin={() => setAuthed(true)} />;
 
