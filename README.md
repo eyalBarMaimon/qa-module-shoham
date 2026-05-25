@@ -2,7 +2,7 @@
 
 אפליקציית Web לניהול מודול איכות, המחליפה את ניהול הטפסים הידני ב-Word.
 
-**גרסה:** 1.0.2 | **Live:** https://eyalbarmaimon.github.io/qa-module-shoham/
+**גרסה:** 1.0.3 | **Live:** https://eyalbarmaimon.github.io/qa-module-shoham/
 
 ## Stack
 - React + Vite + Tailwind CSS
@@ -43,7 +43,12 @@ https://raw.githubusercontent.com/eyalBarMaimon/qa-module-shoham/main/Scanned_Do
 | ספקים | 32 ספקים, ISO cert expiry |
 | הדרכות (F-6.2-2) | תכנית הדרכות שנתית |
 
-## שינויים אחרונים — v1.0.2
+## שינויים אחרונים — v1.0.3
+- העברת פרויקט Firebase ל-`mshoham-quality-module`
+- הוספת clipboard לטבלאות (העתקת נתונים כ-TSV)
+- תיקון סגירת dropdown בקליק ימני (Tools, Training)
+
+## v1.0.2
 - ניווט חכם מלוח בקרה: לחיצה על שם פריט בטבלת ההתראות מנווטת ללשונית ופותחת את חלון העדכן/היסטוריה אוטומטית
 - EditToolDialog / EditMachineDialog — עריכת פרטי מכשיר/מכונה
 - FileDropZone — גרירת קבצי כיול (PDF/JPG)
