@@ -19,7 +19,10 @@ function TrainerCell({ value, employees, onChange }) {
   const ref = useRef(null);
 
   useEffect(() => {
-    function handleClick(e) { if (ref.current && !ref.current.contains(e.target)) setShowList(false); }
+    function handleClick(e) {
+      if (e.button !== 0) return;
+      if (ref.current && !ref.current.contains(e.target)) setShowList(false);
+    }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);

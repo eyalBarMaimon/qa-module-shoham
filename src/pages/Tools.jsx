@@ -186,7 +186,10 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   }, [attachedFile, form.תאריך, naMode, tool, today]);
 
   useEffect(() => {
-    function handleClick(e) { if (dropRef.current && !dropRef.current.contains(e.target)) setShowList(false); }
+    function handleClick(e) {
+      if (e.button !== 0) return;
+      if (dropRef.current && !dropRef.current.contains(e.target)) setShowList(false);
+    }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, []);
