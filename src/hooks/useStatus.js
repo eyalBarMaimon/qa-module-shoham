@@ -10,7 +10,7 @@ export function calcStatus(nextDateStr, type = 'tools') {
   if (days === null) return 'gray';
 
   const threshold = STATUS_THRESHOLDS[type] ?? 60;
-  if (days < 0) return 'red';
+  if (days <= 0) return 'red';
   if (days <= threshold) return 'amber';
   return 'green';
 }
