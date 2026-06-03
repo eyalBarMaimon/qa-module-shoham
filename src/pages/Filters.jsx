@@ -301,6 +301,12 @@ export default function Filters() {
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
+  async function handleDeleteFilter(row) {
+    if (!window.confirm(`למחוק את פילטר "${row['מ. פילטר']}"?`)) return;
+    await filtersCol.deleteRow(row._id);
+    filtersCol.setData(prev => prev.filter(r => r._id !== row._id));
+  }
+
   const cols = ['מ. פילטר', 'מכונה', 'מ. מכונה', 'מיקום', 'תדירות', 'תאריך אחרון', 'תאריך הבא', 'סטטוס'];
 
   return (
@@ -360,19 +366,28 @@ export default function Filters() {
               <td className="border border-[#999] px-3 py-1.5">{r._nextDate}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
               <td className="border border-[#999] px-2 py-1.5 text-center whitespace-nowrap">
-                <button
-                  onClick={() => setActiveFilter(r)}
-                  className="text-blue-600 text-xs hover:underline whitespace-nowrap"
-                >
-                  עדכן / היסטוריה
-                </button>
-                <span className="mx-1 text-gray-300">|</span>
-                <button
-                  onClick={() => setEditFilter(r)}
-                  className="text-gray-500 text-xs hover:underline whitespace-nowrap"
-                >
-                  עריכה
-                </button>
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() => setActiveFilter(r)}
+                    className="text-blue-600 text-xs hover:underline whitespace-nowrap"
+                  >
+                    עדכן / היסטוריה
+                  </button>
+                  <button
+                    onClick={() => setEditFilter(r)}
+                    title="עריכה"
+                    className="text-gray-400 hover:text-blue-600 text-base leading-none"
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => handleDeleteFilter(r)}
+                    title="מחק שורה"
+                    className="text-gray-300 hover:text-red-500 text-base leading-none"
+                  >
+                    ×
+                  </button>
+                </div>
               </td>
             </tr>
           ))}
