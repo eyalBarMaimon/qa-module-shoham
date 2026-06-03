@@ -82,6 +82,8 @@ function AddSupplierDialog({ onClose, onSave }) {
 
 // ── Supplier update + history dialog ─────────────────────────────────────────
 function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
+  const [deletingId, setDeletingId] = useState(null);
+
   const history = useMemo(() => {
     const records = [...historyCol.data]
       .filter(r => r.supplier_id === supplier._id)
@@ -144,6 +146,15 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
     setForm({ תוקף_עד: form.תוקף_עד, הערות: form.הערות });
   }
 
+  async function handleDeleteHistory(record) {
+    if (!record._id || record._baseline) return;
+    if (!window.confirm('למחוק שורה זו מההיסטוריה?')) return;
+    setDeletingId(record._id);
+    await historyCol.deleteRow(record._id);
+    historyCol.setData(prev => prev.filter(r => r._id !== record._id));
+    setDeletingId(null);
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
@@ -192,6 +203,7 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">תוקף עד</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">הערות</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">תאריך עדכון</th>
+                  <th className="border border-gray-200 px-2 py-1.5 font-semibold w-8"></th>
                 </tr>
               </thead>
               <tbody>
@@ -206,6 +218,16 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
                       {r.recordedAt && r.recordedAt !== '2000-01-01T00:00:00.000Z'
                         ? new Date(r.recordedAt).toLocaleDateString('he-IL')
                         : '—'}
+                    </td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center">
+                      {!r._baseline && (
+                        <button
+                          onClick={() => handleDeleteHistory(r)}
+                          disabled={deletingId === r._id}
+                          title="מחק שורה"
+                          className="text-red-400 hover:text-red-600 text-base leading-none disabled:opacity-40"
+                        >×</button>
+                      )}
                     </td>
                   </tr>
                 ))}

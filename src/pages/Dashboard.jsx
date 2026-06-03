@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
 import { useCollection as useSheets } from '../hooks/useCollection';
-import { calcStatus } from '../hooks/useStatus';
+import { calcStatus, calcFilterStatus } from '../hooks/useStatus';
 
 function SummaryCard({ label, count, color }) {
   const bg = { red: 'bg-[#FECDD3]', amber: 'bg-[#FEF3C7]' }[color] || 'bg-gray-100';
@@ -19,11 +19,13 @@ export default function Dashboard({ onNavigate }) {
   const tools     = useSheets('Tools');
   const suppliers = useSheets('Suppliers');
   const machines  = useSheets('Machines');
+  const filters   = useSheets('Filters');
 
   useEffect(() => {
     tools.fetchSheet();
     suppliers.fetchSheet();
     machines.fetchSheet();
+    filters.fetchSheet();
   }, []);
 
   const toolsExpired  = useMemo(() => tools.data.filter(r => calcStatus(r['מועד הבא'], 'tools') === 'red').length, [tools.data]);
@@ -32,6 +34,7 @@ export default function Dashboard({ onNavigate }) {
   const suppAmber     = useMemo(() => suppliers.data.filter(r => calcStatus(r['תוקף עד'], 'suppliers') === 'amber').length, [suppliers.data]);
   const machExpired   = useMemo(() => machines.data.filter(r => calcStatus(r['מועד הבא'], 'machines') === 'red').length, [machines.data]);
   const machAmber     = useMemo(() => machines.data.filter(r => calcStatus(r['מועד הבא'], 'machines') === 'amber').length, [machines.data]);
+  const filtAmber     = useMemo(() => filters.data.filter(r => calcFilterStatus(r['תאריך אחרון'], r['תדירות']) === 'amber').length, [filters.data]);
 
   const alerts = useMemo(() => {
     const rows = [];
@@ -50,26 +53,32 @@ export default function Dashboard({ onNavigate }) {
       if (s === 'red' || s === 'amber')
         rows.push({ category: 'מערכת', name: r['שם'], next: r['מועד הבא'], status: s, tab: 'machines' });
     });
+    filters.data.forEach(r => {
+      const s = calcFilterStatus(r['תאריך אחרון'], r['תדירות']);
+      if (s === 'amber')
+        rows.push({ category: 'פילטר', name: `${r['מ. פילטר']} — ${r['מכונה']}`, next: r['תאריך אחרון'] || '—', status: s, tab: 'filters' });
+    });
     return rows.sort((a, b) => {
       if (a.status === b.status) return 0;
       return a.status === 'red' ? -1 : 1;
     });
-  }, [tools.data, suppliers.data, machines.data]);
+  }, [tools.data, suppliers.data, machines.data, filters.data]);
 
-  const loading = tools.loading || suppliers.loading || machines.loading;
+  const loading = tools.loading || suppliers.loading || machines.loading || filters.loading;
 
   return (
     <div>
       <DocHeader tab="dashboard" />
       {loading && <div className="text-center text-gray-400 py-4">טוען נתונים...</div>}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-6">
         <SummaryCard label="כלי מדידה — פג תוקף" count={toolsExpired} color="red" />
         <SummaryCard label="כלי מדידה — עד 60 יום" count={toolsAmber} color="amber" />
         <SummaryCard label="מערכות — פג תוקף" count={machExpired} color="red" />
         <SummaryCard label="מערכות — עד 60 יום" count={machAmber} color="amber" />
         <SummaryCard label="ספקים — פג תוקף" count={suppExpired} color="red" />
         <SummaryCard label="ספקים — עד 90 יום" count={suppAmber} color="amber" />
+        <SummaryCard label="פילטרים — דורש טיפול" count={filtAmber} color="amber" />
       </div>
 
       <div className="text-sm font-semibold mb-2">התראות פעילות</div>

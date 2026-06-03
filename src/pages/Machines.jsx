@@ -98,8 +98,8 @@ function AddMachineDialog({ onClose, onSave }) {
     setSaving(true);
     await onSave({
       ...form,
-      'תאריך כיול': toDisplay(form['תאריך כיול']),
-      'מועד הבא':   toDisplay(form['מועד הבא']),
+      'תאריך כיול': form['תאריך כיול'] ? toDisplay(form['תאריך כיול']) : '',
+      'מועד הבא':   form['מועד הבא']   ? toDisplay(form['מועד הבא'])   : '',
     });
     setSaving(false);
     onClose();

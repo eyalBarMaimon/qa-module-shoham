@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { parseDate } from '../utils/dateUtils';
 
-const DATE_FIELDS = ['תאריך בדיקה', 'מועד הבא', 'תאריך כיול', 'תאריך אחרון', 'תוקף עד'];
+const DATE_FIELDS = ['תאריך בדיקה', 'מועד הבא', 'תאריך כיול', 'תאריך אחרון', 'תוקף עד', '_nextDate'];
 const STATUS_ORDER = { red: 0, amber: 1, green: 2, gray: 3 };
 
 export function useSortable(rows) {

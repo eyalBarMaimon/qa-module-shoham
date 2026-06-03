@@ -131,6 +131,7 @@ export default function Lamps() {
 
   async function removeRow(i) {
     const r = rows[i];
+    if (!window.confirm('למחוק שורה זו?')) return;
     if (r._id) await lampsCol.deleteRow(r._id);
     setRows(prev => prev.filter((_, idx) => idx !== i));
   }

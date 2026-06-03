@@ -107,9 +107,12 @@ export default function Training() {
   function toggleEmployee(name) { setTempSelected(prev => prev.includes(name) ? prev.filter(n => n !== name) : [...prev, name]); }
   function saveDialog() { updateTopic(dialogTopic, 'משתתפים', tempSelected); setDialogTopic(null); }
 
-  function addEmployee() {
+  async function addEmployee() {
     const name = newEmployee.trim();
-    if (name && !employees.includes(name)) { setEmployees(prev => [...prev, name]); setNewEmployee(''); }
+    if (!name || employees.includes(name)) return;
+    setEmployees(prev => [...prev, name]);
+    setNewEmployee('');
+    await employeesSheet.appendRow({ 'שם': name });
   }
 
   function removeEmployee(name) {
