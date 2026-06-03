@@ -245,12 +245,12 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
         fileName,
       });
 
+      await toolsCol.updateRow(tool._id, { 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate });
       toolsCol.setData(prev => prev.map(r =>
         r._id === tool._id
           ? { ...r, 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate }
           : r
       ));
-      await toolsCol.updateRow(tool._id, { 'תאריך בדיקה': displayDate, 'מועד הבא': displayNextDate });
       await historyCol.fetchSheet();
       setNextMode('date');
       setNaMode(false);

@@ -223,12 +223,12 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
         fileName,
       });
 
+      await machinesCol.updateRow(machine._id, { 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext });
       machinesCol.setData(prev => prev.map(r =>
         r._id === machine._id
           ? { ...r, 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext }
           : r
       ));
-      await machinesCol.updateRow(machine._id, { 'תאריך כיול': displayKiyul, 'מועד הבא': displayNext });
       await historyCol.fetchSheet();
       setAttachedFile(null);
       setFileResetKey(k => k + 1);
@@ -373,8 +373,8 @@ export default function Machines({ autoOpen, onAutoOpened }) {
 
   async function handleDeactivate(row) {
     try {
-      machinesCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
       await machinesCol.updateRow(row._id, { 'מועד הבא': 'לא בשימוש' });
+      machinesCol.setData(prev => prev.map(r => r._id === row._id ? { ...r, 'מועד הבא': 'לא בשימוש' } : r));
     } catch (e) {
       await machinesCol.fetchSheet();
     }

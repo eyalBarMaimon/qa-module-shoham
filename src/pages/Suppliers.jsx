@@ -135,12 +135,12 @@ function SupplierDialog({ supplier, onClose, historyCol, suppliersCol }) {
       recordedAt: new Date().toISOString(),
     });
 
+    await suppliersCol.updateRow(supplier._id, { 'תוקף עד': displayDate, 'הערות': form.הערות });
     suppliersCol.setData(prev => prev.map(r =>
       r._id === supplier._id
         ? { ...r, 'תוקף עד': displayDate, 'הערות': form.הערות }
         : r
     ));
-    await suppliersCol.updateRow(supplier._id, { 'תוקף עד': displayDate, 'הערות': form.הערות });
     await historyCol.fetchSheet();
     setSaving(false);
     setForm({ תוקף_עד: form.תוקף_עד, הערות: form.הערות });

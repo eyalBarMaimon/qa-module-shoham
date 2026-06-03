@@ -147,12 +147,12 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) 
       recordedAt:    new Date().toISOString(),
     });
 
+    await filtersCol.updateRow(filter._id, { 'תאריך אחרון': displayDate, 'תדירות': form.תדירות });
     filtersCol.setData(prev => prev.map(r =>
       r._id === filter._id
         ? { ...r, 'תאריך אחרון': displayDate, 'תדירות': form.תדירות }
         : r
     ));
-    await filtersCol.updateRow(filter._id, { 'תאריך אחרון': displayDate, 'תדירות': form.תדירות });
     await historyCol.fetchSheet();
     setSaving(false);
     setForm({ תאריך_אחרון: form.תאריך_אחרון, תדירות: form.תדירות, בוצע_על_ידי: '' });

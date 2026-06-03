@@ -151,6 +151,7 @@ export default function Training() {
     historySheet.setData(prev => prev.filter(r => r._id !== docId));
   }
 
+
   async function saveNewTopic() {
     if (!newTopic.נושא.trim()) return;
     setSavingTopic(true);

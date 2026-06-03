@@ -162,7 +162,7 @@ export default function Lamps() {
         </thead>
         <tbody>
           {rows.map((r, i) => (
-            <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
+            <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               {COLS.map(c => (
                 <td key={c} className="border border-[#999] px-1 py-1">
                   <input
