@@ -376,7 +376,8 @@ export default function Filters() {
                   <button
                     onClick={() => setEditFilter(r)}
                     title="עריכה"
-                    className="text-gray-400 hover:text-blue-600 text-base leading-none"
+                    className="text-gray-400 hover:text-blue-600 leading-none"
+                    style={{fontSize: '11px'}}
                   >
                     ✏️
                   </button>
