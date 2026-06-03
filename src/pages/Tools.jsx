@@ -511,7 +511,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
       {toolsCol.error && <div className="text-red-500 text-sm mb-3">{toolsCol.error}</div>}
 
       <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+      <table className="w-full min-w-[860px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"            label="#"            sort={sort} onSort={toggleSort} />

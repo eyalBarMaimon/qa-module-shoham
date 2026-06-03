@@ -89,7 +89,7 @@ export default function Dashboard({ onNavigate }) {
       )}
       {alerts.length > 0 && (
         <div className="overflow-x-auto">
-        <table className="w-full text-sm border-collapse">
+        <table className="w-full min-w-[480px] text-sm border-collapse">
           <thead>
             <tr className="bg-[#D9D9D9] text-right">
               <th className="border border-[#999] px-3 py-2">קטגוריה</th>

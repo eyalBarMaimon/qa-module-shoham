@@ -322,7 +322,7 @@ export default function Suppliers({ autoOpen, onAutoOpened }) {
       {suppliersCol.loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
       {suppliersCol.error && <div className="text-red-500 text-sm mb-3">{suppliersCol.error}</div>}
       <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+      <table className="w-full min-w-[640px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"          label="#"          sort={sort} onSort={toggleSort} />

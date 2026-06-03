@@ -421,7 +421,7 @@ export default function Machines({ autoOpen, onAutoOpened }) {
       {machinesCol.loading && <div className="text-center text-gray-400 py-4">טוען...</div>}
       {machinesCol.error && <div className="text-red-500 text-sm mb-3">{machinesCol.error}</div>}
       <div className="overflow-x-auto">
-      <table className="w-full text-sm border-collapse">
+      <table className="w-full min-w-[780px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="מ. מכונה"    label="מ. מכונה"    sort={sort} onSort={toggleSort} />
