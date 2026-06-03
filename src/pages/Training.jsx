@@ -115,9 +115,12 @@ export default function Training() {
     await employeesSheet.appendRow({ 'שם': name });
   }
 
-  function removeEmployee(name) {
+  async function removeEmployee(name) {
+    if (!window.confirm(`להסיר את "${name}" מרשימת העובדים?`)) return;
     setEmployees(prev => prev.filter(e => e !== name));
     setTopics(prev => prev.map(t => ({ ...t, משתתפים: t.משתתפים.filter(e => e !== name) })));
+    const record = employeesSheet.data.find(r => r['שם'] === name);
+    if (record) await employeesSheet.deleteRow(record._id);
   }
 
   async function confirmTraining(i) {

@@ -23,7 +23,6 @@ function toDisplay(iso) {
 
 function calcNextDate(lastDateStr, frequency) {
   if (!lastDateStr || !frequency) return '';
-  const lower = String(frequency).toLowerCase();
   if (['לא נדרש', 'לא בשימוש', '-', ''].includes(String(frequency).trim())) return '';
   const d = parseDate(lastDateStr);
   if (!d) return '';
@@ -54,7 +53,7 @@ function EditFilterDialog({ filter, filtersCol, onClose }) {
     await filtersCol.updateRow(filter._id, form);
     filtersCol.setData(prev => prev.map(r => r._id === filter._id ? { ...r, ...form } : r));
     setSaving(false);
-    onClose();
+    onClose(form);
   }
 
   return (
@@ -273,7 +272,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) 
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function Filters() {
+export default function Filters({ autoOpen, onAutoOpened }) {
   const filtersCol = useSheets('Filters');
   const historyCol = useSheets('FiltersHistory');
   const [activeFilter, setActiveFilter] = useState(null);
@@ -284,6 +283,15 @@ export default function Filters() {
     filtersCol.fetchSheet();
     historyCol.fetchSheet();
   }, []);
+
+  useEffect(() => {
+    if (!autoOpen || filtersCol.data.length === 0) return;
+    const match = filtersCol.data.find(r =>
+      `${r['מ. פילטר']} — ${r['מכונה']}` === autoOpen || r['מ. פילטר'] === autoOpen
+    );
+    if (match) setActiveFilter(match);
+    onAutoOpened?.();
+  }, [autoOpen, filtersCol.data]);
 
   const uniqueFreqs = useMemo(() =>
     [...new Set(filtersCol.data.map(r => r['תדירות']).filter(Boolean))].sort(),
@@ -302,9 +310,12 @@ export default function Filters() {
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
   async function handleDeleteFilter(row) {
-    if (!window.confirm(`למחוק את פילטר "${row['מ. פילטר']}"?`)) return;
+    if (!window.confirm(`למחוק את פילטר "${row['מ. פילטר']}"?\nכל ההיסטוריה שלו תימחק גם כן.`)) return;
+    const historyIds = historyCol.data.filter(r => r.filter_id === row._id).map(r => r._id);
     await filtersCol.deleteRow(row._id);
+    await Promise.all(historyIds.map(id => historyCol.deleteRow(id)));
     filtersCol.setData(prev => prev.filter(r => r._id !== row._id));
+    historyCol.setData(prev => prev.filter(r => r.filter_id !== row._id));
   }
 
   const cols = ['מ. פילטר', 'מכונה', 'מ. מכונה', 'מיקום', 'תדירות', 'תאריך אחרון', 'תאריך הבא', 'סטטוס'];
@@ -413,7 +424,12 @@ export default function Filters() {
         <EditFilterDialog
           filter={editFilter}
           filtersCol={filtersCol}
-          onClose={() => setEditFilter(null)}
+          onClose={updatedForm => {
+            if (updatedForm && activeFilter?._id === editFilter._id) {
+              setActiveFilter(prev => prev ? { ...prev, ...updatedForm } : prev);
+            }
+            setEditFilter(null);
+          }}
         />
       )}
     </div>
