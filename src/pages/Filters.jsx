@@ -6,6 +6,7 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcFilterStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
+import { parseDate, formatDate } from '../utils/dateUtils';
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -20,8 +21,77 @@ function toDisplay(iso) {
   return `${d}/${m}/${y}`;
 }
 
+function calcNextDate(lastDateStr, frequency) {
+  if (!lastDateStr || !frequency) return '';
+  const lower = String(frequency).toLowerCase();
+  if (['לא נדרש', 'לא בשימוש', '-', ''].includes(String(frequency).trim())) return '';
+  const d = parseDate(lastDateStr);
+  if (!d) return '';
+  const next = new Date(d);
+  next.setDate(next.getDate() + 90);
+  return formatDate(next);
+}
+
+// ── Edit filter details dialog ─────────────────────────────────────────────────
+function EditFilterDialog({ filter, filtersCol, onClose }) {
+  const [form, setForm] = useState({
+    'מ. פילטר': filter['מ. פילטר'] || '',
+    'מכונה':    filter['מכונה']    || '',
+    'מ. מכונה': filter['מ. מכונה'] || '',
+    'מיקום':    filter['מיקום']    || '',
+    'תדירות':   filter['תדירות']   || '',
+  });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  async function handleSave() {
+    setSaving(true);
+    await filtersCol.updateRow(filter._id, form);
+    filtersCol.setData(prev => prev.map(r => r._id === filter._id ? { ...r, ...form } : r));
+    setSaving(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div className="bg-white rounded shadow-xl w-full max-w-md" dir="rtl" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+          <div className="font-bold text-base">עריכת פרטי פילטר</div>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">×</button>
+        </div>
+        <div className="px-5 py-4 flex flex-col gap-3">
+          {[['מ. פילטר', 'מספר פילטר'], ['מכונה', 'שם מכונה'], ['מ. מכונה', 'מ. מכונה'], ['מיקום', 'מיקום'], ['תדירות', 'תדירות']].map(([field, label]) => (
+            <div key={field}>
+              <label className="text-xs text-gray-500 block mb-1">{label}</label>
+              <input
+                value={form[field]}
+                onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-none focus:border-blue-400"
+              />
+            </div>
+          ))}
+        </div>
+        <div className="px-5 pb-4 flex justify-end gap-2">
+          <button onClick={onClose} className="px-4 py-1.5 rounded text-sm border border-gray-300 hover:bg-gray-50">ביטול</button>
+          <button onClick={handleSave} disabled={saving}
+            className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
+            {saving ? 'שומר...' : 'שמור'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Filter update + history dialog ────────────────────────────────────────────
 function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) {
+  const [deletingId, setDeletingId] = useState(null);
+
   const history = useMemo(() => {
     const records = [...historyCol.data]
       .filter(r => r.filter_id === filter._id)
@@ -89,6 +159,15 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) 
     setForm({ תאריך_אחרון: form.תאריך_אחרון, תדירות: form.תדירות, בוצע_על_ידי: '' });
   }
 
+  async function handleDeleteHistory(record) {
+    if (!record._id || record._baseline) return;
+    if (!window.confirm('למחוק שורה זו מההיסטוריה?')) return;
+    setDeletingId(record._id);
+    await historyCol.deleteRow(record._id);
+    historyCol.setData(prev => prev.filter(r => r._id !== record._id));
+    setDeletingId(null);
+  }
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div className="bg-white rounded shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
@@ -153,6 +232,7 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) 
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">תדירות</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">בוצע על ידי</th>
                   <th className="border border-gray-200 px-3 py-1.5 font-semibold">נרשם בתאריך</th>
+                  <th className="border border-gray-200 px-2 py-1.5 font-semibold w-8"></th>
                 </tr>
               </thead>
               <tbody>
@@ -168,6 +248,18 @@ function FilterDialog({ filter, onClose, historyCol, filtersCol, uniqueFreqs }) 
                       {r.recordedAt && r.recordedAt !== '2000-01-01T00:00:00.000Z'
                         ? new Date(r.recordedAt).toLocaleDateString('he-IL')
                         : '—'}
+                    </td>
+                    <td className="border border-gray-200 px-2 py-1.5 text-center">
+                      {!r._baseline && (
+                        <button
+                          onClick={() => handleDeleteHistory(r)}
+                          disabled={deletingId === r._id}
+                          title="מחק שורה"
+                          className="text-red-400 hover:text-red-600 text-base leading-none disabled:opacity-40"
+                        >
+                          ×
+                        </button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -185,6 +277,7 @@ export default function Filters() {
   const filtersCol = useSheets('Filters');
   const historyCol = useSheets('FiltersHistory');
   const [activeFilter, setActiveFilter] = useState(null);
+  const [editFilter, setEditFilter] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
@@ -197,14 +290,18 @@ export default function Filters() {
     [filtersCol.data]);
 
   const filtered = useMemo(() => {
-    const withStatus = filtersCol.data.map(r => ({ ...r, _status: calcFilterStatus(r['תאריך אחרון'], r['תדירות']) }));
+    const withStatus = filtersCol.data.map(r => ({
+      ...r,
+      _status:   calcFilterStatus(r['תאריך אחרון'], r['תדירות']),
+      _nextDate: calcNextDate(r['תאריך אחרון'], r['תדירות']),
+    }));
     if (filterStatus === 'all') return withStatus;
     return withStatus.filter(r => r._status === filterStatus);
   }, [filtersCol.data, filterStatus]);
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
-  const cols = ['מ. פילטר', 'מכונה', 'מ. מכונה', 'מיקום', 'תדירות', 'תאריך אחרון', 'סטטוס'];
+  const cols = ['מ. פילטר', 'מכונה', 'מ. מכונה', 'מיקום', 'תדירות', 'תאריך אחרון', 'תאריך הבא', 'סטטוס'];
 
   return (
     <div>
@@ -222,7 +319,13 @@ export default function Filters() {
           <option value="gray">לא פעיל</option>
         </select>
         <button
-          onClick={() => exportTablePDF('filters', cols, rows.map(r => cols.map(c => c === 'סטטוס' ? r._status : (r[c] ?? ''))))}
+          onClick={() => exportTablePDF('filters', cols, rows.map(r =>
+            cols.map(c => {
+              if (c === 'סטטוס') return r._status;
+              if (c === 'תאריך הבא') return r._nextDate ?? '';
+              return r[c] ?? '';
+            })
+          ))}
           className="mr-auto bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
         >
           ייצוא PDF
@@ -240,6 +343,7 @@ export default function Filters() {
             <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
             <SortableHeader col="תדירות"        label="תדירות"        sort={sort} onSort={toggleSort} />
             <SortableHeader col="תאריך אחרון"   label="תאריך אחרון"   sort={sort} onSort={toggleSort} />
+            <SortableHeader col="_nextDate"     label="תאריך הבא"     sort={sort} onSort={toggleSort} />
             <SortableHeader col="_status"       label="סטטוס"         sort={sort} onSort={toggleSort} />
             <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
@@ -253,19 +357,27 @@ export default function Filters() {
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תדירות']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תאריך אחרון']}</td>
+              <td className="border border-[#999] px-3 py-1.5">{r._nextDate}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
-              <td className="border border-[#999] px-2 py-1.5 text-center">
+              <td className="border border-[#999] px-2 py-1.5 text-center whitespace-nowrap">
                 <button
                   onClick={() => setActiveFilter(r)}
                   className="text-blue-600 text-xs hover:underline whitespace-nowrap"
                 >
                   עדכן / היסטוריה
                 </button>
+                <span className="mx-1 text-gray-300">|</span>
+                <button
+                  onClick={() => setEditFilter(r)}
+                  className="text-gray-500 text-xs hover:underline whitespace-nowrap"
+                >
+                  עריכה
+                </button>
               </td>
             </tr>
           ))}
           {rows.length === 0 && !filtersCol.loading && (
-            <tr><td colSpan={8} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
+            <tr><td colSpan={9} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
           )}
         </tbody>
       </table>
@@ -278,6 +390,14 @@ export default function Filters() {
           historyCol={historyCol}
           filtersCol={filtersCol}
           uniqueFreqs={uniqueFreqs}
+        />
+      )}
+
+      {editFilter && (
+        <EditFilterDialog
+          filter={editFilter}
+          filtersCol={filtersCol}
+          onClose={() => setEditFilter(null)}
         />
       )}
     </div>
