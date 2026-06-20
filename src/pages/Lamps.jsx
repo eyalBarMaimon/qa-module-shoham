@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
-import { todayFormatted } from '../utils/dateUtils';
+import { latestUpdate } from '../utils/dateUtils';
 
 const DEFAULT_LAMPS = [
   { 'שם המכונה': 'AL 120',   'מ. סידורי מכונה': '10620211', 'סוג מנורה': '', 'תאריך החלפה': '', 'כמות פולסים': '', 'הערות': '' },
@@ -136,9 +136,11 @@ export default function Lamps() {
     setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 
+  const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
+
   return (
     <div>
-      <DocHeader tab="lamps" />
+      <DocHeader tab="lamps" lastUpdate={lastUpdate} />
       <div className="flex justify-between mb-3">
         <button onClick={addRow} className="bg-green-600 text-white px-4 py-1.5 rounded text-sm hover:bg-green-700">
           + הוסף שורה

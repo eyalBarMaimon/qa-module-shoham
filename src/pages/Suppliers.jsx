@@ -6,6 +6,7 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
+import { latestUpdate } from '../utils/dateUtils';
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -283,11 +284,13 @@ export default function Suppliers({ autoOpen, onAutoOpened }) {
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
+  const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
+
   const cols = ['#', 'שם ספק', 'סוג הסמכה', 'תוקף עד', 'הערות', 'סטטוס'];
 
   return (
     <div>
-      <DocHeader tab="suppliers" />
+      <DocHeader tab="suppliers" lastUpdate={lastUpdate} />
       <div className="flex flex-wrap gap-2 mb-3 items-center">
         <input
           value={search}

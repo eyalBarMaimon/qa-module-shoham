@@ -6,7 +6,7 @@ import { useCollection as useSheets } from '../hooks/useCollection';
 import { calcFilterStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
-import { parseDate, formatDate } from '../utils/dateUtils';
+import { parseDate, formatDate, latestUpdate } from '../utils/dateUtils';
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -297,6 +297,8 @@ export default function Filters({ autoOpen, onAutoOpened }) {
     [...new Set(filtersCol.data.map(r => r['תדירות']).filter(Boolean))].sort(),
     [filtersCol.data]);
 
+  const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
+
   const filtered = useMemo(() => {
     const withStatus = filtersCol.data.map(r => ({
       ...r,
@@ -322,7 +324,7 @@ export default function Filters({ autoOpen, onAutoOpened }) {
 
   return (
     <div>
-      <DocHeader tab="filters" />
+      <DocHeader tab="filters" lastUpdate={lastUpdate} />
       <div className="flex flex-wrap gap-2 mb-3 items-center">
         <select
           value={filterStatus}

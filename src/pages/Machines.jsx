@@ -8,6 +8,7 @@ import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadScanedDoc } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
+import { latestUpdate } from '../utils/dateUtils';
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -388,11 +389,13 @@ export default function Machines({ autoOpen, onAutoOpened }) {
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
+  const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
+
   const cols = ['מ. מכונה', 'שם', 'יצרן', 'תאריך כיול', 'מועד הבא', 'מיקום', 'סטטוס'];
 
   return (
     <div>
-      <DocHeader tab="machines" />
+      <DocHeader tab="machines" lastUpdate={lastUpdate} />
       <div className="flex gap-2 mb-3 items-center">
         <select
           value={filterStatus}

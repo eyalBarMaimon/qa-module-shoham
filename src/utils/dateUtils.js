@@ -41,3 +41,16 @@ export function daysUntil(dateStr) {
 export function todayFormatted() {
   return formatDate(new Date());
 }
+
+// Returns the most recent recordedAt (or confirmedAt) from a history collection
+// as DD/MM/YYYY, ignoring baseline sentinel rows (2000-01-01).
+export function latestUpdate(historyData, field = 'recordedAt') {
+  const BASELINE = '2000-01-01';
+  const latest = historyData
+    .map(r => r[field] || '')
+    .filter(r => r && !r.startsWith(BASELINE))
+    .sort()
+    .at(-1);
+  if (!latest) return null;
+  return new Date(latest).toLocaleDateString('he-IL');
+}

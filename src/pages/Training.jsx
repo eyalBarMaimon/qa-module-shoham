@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import DocHeader from '../components/DocHeader';
 import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
-import { todayFormatted } from '../utils/dateUtils';
+import { latestUpdate } from '../utils/dateUtils';
 
 const DEFAULT_TOPICS = [
   { נושא: 'ריענון בטיחות ליד מערכות לייזר',  מסמכים: 'נוהל בטיחות בלייזר REV02' },
@@ -177,9 +177,11 @@ export default function Training() {
     ? sortedHistory
     : sortedHistory.filter(r => r.נושא === filterTopic);
 
+  const lastUpdate = useMemo(() => latestUpdate(historySheet.data, 'confirmedAt'), [historySheet.data]);
+
   return (
     <div>
-      <DocHeader tab="training" />
+      <DocHeader tab="training" lastUpdate={lastUpdate} />
 
       {/* View toggle */}
       <div className="flex gap-2 mb-4">

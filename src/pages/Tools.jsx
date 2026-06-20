@@ -8,6 +8,7 @@ import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadScanedDoc } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
+import { latestUpdate } from '../utils/dateUtils';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const IMAGE_EXTS  = ['.jpg', '.jpeg', '.png', '.webp'];
@@ -540,11 +541,13 @@ export default function Tools({ autoOpen, onAutoOpened }) {
 
   const { sorted: rows, sort, toggleSort } = useSortable(filtered);
 
+  const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
+
   const cols = ['#', 'שם המכשיר', 'מספר סידורי', 'תאריך בדיקה', 'מועד הבא', 'מיקום', 'סטטוס'];
 
   return (
     <div>
-      <DocHeader tab="tools" />
+      <DocHeader tab="tools" lastUpdate={lastUpdate} />
       <div className="flex flex-wrap gap-2 mb-3 items-center">
         <input
           value={search}

@@ -68,7 +68,7 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div>
-      <DocHeader tab="dashboard" />
+      <DocHeader tab="dashboard" lastUpdate={null} />
       {loading && <div className="text-center text-gray-400 py-4">טוען נתונים...</div>}
 
       <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-3 mb-6">
