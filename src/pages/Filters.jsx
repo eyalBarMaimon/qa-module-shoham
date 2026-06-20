@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
 import SortableHeader from '../components/SortableHeader';
@@ -7,6 +7,23 @@ import { calcFilterStatus } from '../hooks/useStatus';
 import { useSortable } from '../hooks/useSortable';
 import { exportTablePDF } from '../utils/exportPDF';
 import { parseDate, formatDate, latestUpdate } from '../utils/dateUtils';
+import { uploadScanedDoc } from '../utils/fileUpload';
+
+const IMG_TYPES = ['image/jpeg','image/jpg','image/png','image/webp'];
+function isImg(f) { return IMG_TYPES.includes(f.type) || ['.jpg','.jpeg','.png','.webp'].includes('.'+f.name.split('.').pop().toLowerCase()); }
+async function uploadFilterImage(file, filterNum) {
+  const clean = String(filterNum||'filter').replace(/[^a-zA-Z0-9א-ת_-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  return uploadScanedDoc(file, 'filters/images', clean, `photo_${clean}`);
+}
+function ImageLightbox({ src, onClose }) {
+  useEffect(() => { const h=e=>{if(e.key==='Escape')onClose();}; window.addEventListener('keydown',h); return()=>window.removeEventListener('keydown',h); },[onClose]);
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+      <img src={src} alt="" className="max-w-full max-h-full rounded shadow-2xl object-contain" onClick={e=>e.stopPropagation()} />
+      <button onClick={onClose} className="absolute top-4 left-4 text-white text-3xl leading-none hover:text-gray-300">×</button>
+    </div>
+  );
+}
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -41,6 +58,10 @@ function EditFilterDialog({ filter, filtersCol, onClose }) {
     'תדירות':   filter['תדירות']   || '',
   });
   const [saving, setSaving] = useState(false);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgPreview, setImgPreview] = useState(filter['imageUrl'] || '');
+  const [imgError, setImgError] = useState('');
+  const imgInputRef = useRef(null);
 
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose(); };
@@ -48,12 +69,25 @@ function EditFilterDialog({ filter, filtersCol, onClose }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  function handleImgChange(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!isImg(f)) { setImgError('סוג קובץ לא נתמך — JPG, PNG או WEBP בלבד'); return; }
+    setImgError(''); setImgFile(f); setImgPreview(URL.createObjectURL(f));
+  }
+
   async function handleSave() {
     setSaving(true);
-    await filtersCol.updateRow(filter._id, form);
-    filtersCol.setData(prev => prev.map(r => r._id === filter._id ? { ...r, ...form } : r));
+    let imageUrl = imgPreview ? (filter['imageUrl'] || '') : '';
+    if (imgFile) {
+      try { imageUrl = await uploadFilterImage(imgFile, form['מ. פילטר'] || filter['מ. פילטר']); }
+      catch (err) { setImgError(err.message || 'העלאת התמונה נכשלה'); setSaving(false); return; }
+    }
+    const updated = { ...form, imageUrl };
+    await filtersCol.updateRow(filter._id, updated);
+    filtersCol.setData(prev => prev.map(r => r._id === filter._id ? { ...r, ...updated } : r));
     setSaving(false);
-    onClose(form);
+    onClose(updated);
   }
 
   return (
@@ -67,19 +101,29 @@ function EditFilterDialog({ filter, filtersCol, onClose }) {
           {[['מ. פילטר', 'מספר פילטר'], ['מכונה', 'שם מכונה'], ['מ. מכונה', 'מ. מכונה'], ['מיקום', 'מיקום'], ['תדירות', 'תדירות']].map(([field, label]) => (
             <div key={field}>
               <label className="text-xs text-gray-500 block mb-1">{label}</label>
-              <input
-                value={form[field]}
-                onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
-                className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-none focus:border-blue-400"
-              />
+              <input value={form[field]} onChange={e => setForm(f => ({ ...f, [field]: e.target.value }))}
+                className="border border-gray-300 rounded px-2 py-1.5 text-sm w-full focus:outline-none focus:border-blue-400" />
             </div>
           ))}
+          <div>
+            <label className="text-xs text-gray-500 block mb-1">תמונת פילטר (JPG / PNG)</label>
+            <div className="flex items-center gap-3">
+              {imgPreview && <img src={imgPreview} alt="" className="w-14 h-14 object-cover rounded border border-gray-200 shrink-0" />}
+              <button type="button" onClick={() => imgInputRef.current?.click()}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
+                {imgPreview ? 'החלף תמונה' : 'בחר תמונה'}
+              </button>
+              {imgPreview && <button type="button" onClick={() => { setImgFile(null); setImgPreview(''); }} className="text-red-400 hover:text-red-600 text-sm">הסר</button>}
+              <input ref={imgInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleImgChange} className="hidden" />
+            </div>
+            {imgError && <div className="mt-1 text-xs text-red-600">{imgError}</div>}
+          </div>
         </div>
         <div className="px-5 pb-4 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-1.5 rounded text-sm border border-gray-300 hover:bg-gray-50">ביטול</button>
           <button onClick={handleSave} disabled={saving}
             className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'שומר...' : 'שמור'}
+            {saving ? (imgFile ? 'מעלה תמונה...' : 'שומר...') : 'שמור'}
           </button>
         </div>
       </div>
@@ -278,6 +322,7 @@ export default function Filters({ autoOpen, onAutoOpened }) {
   const [activeFilter, setActiveFilter] = useState(null);
   const [editFilter, setEditFilter] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   useEffect(() => {
     filtersCol.fetchSheet();
@@ -358,6 +403,7 @@ export default function Filters({ autoOpen, onAutoOpened }) {
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="מ. פילטר"     label="מ. פילטר"     sort={sort} onSort={toggleSort} />
             <SortableHeader col="מכונה"         label="מכונה"         sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
             <SortableHeader col="מ. מכונה"     label="מ. מכונה"     sort={sort} onSort={toggleSort} />
             <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
             <SortableHeader col="תדירות"        label="תדירות"        sort={sort} onSort={toggleSort} />
@@ -372,6 +418,12 @@ export default function Filters({ autoOpen, onAutoOpened }) {
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['מ. פילטר']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מכונה']}</td>
+              <td className="border border-[#999] px-2 py-1.5 text-center">
+                {r['imageUrl'] ? (
+                  <img src={r['imageUrl']} alt="" onClick={() => setLightboxSrc(r['imageUrl'])}
+                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto" title="לחץ להגדלה" />
+                ) : <span className="text-gray-300 text-xs">—</span>}
+              </td>
               <td className="border border-[#999] px-3 py-1.5">{r['מ. מכונה']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תדירות']}</td>
@@ -406,7 +458,7 @@ export default function Filters({ autoOpen, onAutoOpened }) {
             </tr>
           ))}
           {rows.length === 0 && !filtersCol.loading && (
-            <tr><td colSpan={9} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
+            <tr><td colSpan={10} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
           )}
         </tbody>
       </table>
@@ -434,6 +486,8 @@ export default function Filters({ autoOpen, onAutoOpened }) {
           }}
         />
       )}
+
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
   );
 }

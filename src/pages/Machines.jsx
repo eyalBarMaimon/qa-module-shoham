@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import StatusBadge from '../components/StatusBadge';
 import SortableHeader from '../components/SortableHeader';
@@ -9,6 +9,30 @@ import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadScanedDoc } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
 import { latestUpdate } from '../utils/dateUtils';
+
+const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const IMAGE_EXTS  = ['.jpg', '.jpeg', '.png', '.webp'];
+function isImageFile(f) {
+  if (IMAGE_TYPES.includes(f.type)) return true;
+  return IMAGE_EXTS.includes('.' + f.name.split('.').pop().toLowerCase());
+}
+async function uploadItemImage(file, category, name) {
+  const clean = String(name || 'item').replace(/[^a-zA-Z0-9א-ת_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return uploadScanedDoc(file, `${category}/images`, clean, `photo_${clean}`);
+}
+function ImageLightbox({ src, onClose }) {
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+      <img src={src} alt="" className="max-w-full max-h-full rounded shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
+      <button onClick={onClose} className="absolute top-4 left-4 text-white text-3xl leading-none hover:text-gray-300">×</button>
+    </div>
+  );
+}
 
 function toISO(ddmmyyyy) {
   if (!ddmmyyyy) return '';
@@ -32,6 +56,10 @@ function EditMachineDialog({ machine, onClose, onSave }) {
     'מיקום':    machine['מיקום']    || '',
   });
   const [saving, setSaving] = useState(false);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgPreview, setImgPreview] = useState(machine['imageUrl'] || '');
+  const [imgError, setImgError] = useState('');
+  const imgInputRef = useRef(null);
 
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose(); };
@@ -39,10 +67,24 @@ function EditMachineDialog({ machine, onClose, onSave }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  function handleImgChange(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!isImageFile(f)) { setImgError('סוג קובץ לא נתמך — JPG, PNG או WEBP בלבד'); return; }
+    setImgError('');
+    setImgFile(f);
+    setImgPreview(URL.createObjectURL(f));
+  }
+
   async function handleSave() {
     if (!form['שם'].trim()) return;
     setSaving(true);
-    await onSave(machine._id, form);
+    let imageUrl = imgPreview ? (machine['imageUrl'] || '') : '';
+    if (imgFile) {
+      try { imageUrl = await uploadItemImage(imgFile, 'machines', form['שם']); }
+      catch (err) { setImgError(err.message || 'העלאת התמונה נכשלה'); setSaving(false); return; }
+    }
+    await onSave(machine._id, { ...form, imageUrl });
     setSaving(false);
     onClose();
   }
@@ -68,12 +110,25 @@ function EditMachineDialog({ machine, onClose, onSave }) {
           {field('מ. מכונה', 'מ. מכונה')}
           {field('יצרן', 'יצרן')}
           <div className="col-span-2">{field('מיקום', 'מיקום')}</div>
+          <div className="col-span-2">
+            <label className="text-xs text-gray-500 block mb-1">תמונת מערכת (JPG / PNG)</label>
+            <div className="flex items-center gap-3">
+              {imgPreview && <img src={imgPreview} alt="" className="w-14 h-14 object-cover rounded border border-gray-200 shrink-0" />}
+              <button type="button" onClick={() => imgInputRef.current?.click()}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
+                {imgPreview ? 'החלף תמונה' : 'בחר תמונה'}
+              </button>
+              {imgPreview && <button type="button" onClick={() => { setImgFile(null); setImgPreview(''); }} className="text-red-400 hover:text-red-600 text-sm">הסר</button>}
+              <input ref={imgInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleImgChange} className="hidden" />
+            </div>
+            {imgError && <div className="mt-1 text-xs text-red-600">{imgError}</div>}
+          </div>
         </div>
         <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">ביטול</button>
           <button onClick={handleSave} disabled={saving || !form['שם'].trim()}
             className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'שומר...' : 'שמור שינויים'}
+            {saving ? (imgFile ? 'מעלה תמונה...' : 'שומר...') : 'שמור שינויים'}
           </button>
         </div>
       </div>
@@ -349,6 +404,7 @@ export default function Machines({ autoOpen, onAutoOpened }) {
   const [activeMachine, setActiveMachine] = useState(null);
   const [editMachine, setEditMachine] = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   useEffect(() => {
     machinesCol.fetchSheet();
@@ -429,6 +485,7 @@ export default function Machines({ autoOpen, onAutoOpened }) {
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="מ. מכונה"    label="מ. מכונה"    sort={sort} onSort={toggleSort} />
             <SortableHeader col="שם"           label="שם"           sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
             <SortableHeader col="יצרן"          label="יצרן"          sort={sort} onSort={toggleSort} />
             <SortableHeader col="תאריך כיול"   label="תאריך כיול"   sort={sort} onSort={toggleSort} />
             <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
@@ -442,6 +499,12 @@ export default function Machines({ autoOpen, onAutoOpened }) {
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['מ. מכונה']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם']}</td>
+              <td className="border border-[#999] px-2 py-1.5 text-center">
+                {r['imageUrl'] ? (
+                  <img src={r['imageUrl']} alt="" onClick={() => setLightboxSrc(r['imageUrl'])}
+                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto" title="לחץ להגדלה" />
+                ) : <span className="text-gray-300 text-xs">—</span>}
+              </td>
               <td className="border border-[#999] px-3 py-1.5">{r['יצרן']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תאריך כיול']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
@@ -477,7 +540,7 @@ export default function Machines({ autoOpen, onAutoOpened }) {
             </tr>
           ))}
           {rows.length === 0 && !machinesCol.loading && (
-            <tr><td colSpan={8} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
+            <tr><td colSpan={9} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
           )}
         </tbody>
       </table>
@@ -506,6 +569,8 @@ export default function Machines({ autoOpen, onAutoOpened }) {
           onSave={handleAddMachine}
         />
       )}
+
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
   );
 }

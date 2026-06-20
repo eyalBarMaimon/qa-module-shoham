@@ -1,8 +1,25 @@
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo, useRef } from 'react';
 import DocHeader from '../components/DocHeader';
 import { useCollection } from '../hooks/useCollection';
 import { exportTablePDF } from '../utils/exportPDF';
 import { latestUpdate } from '../utils/dateUtils';
+import { uploadScanedDoc } from '../utils/fileUpload';
+
+const IMG_TYPES = ['image/jpeg','image/jpg','image/png','image/webp'];
+function isImg(f) { return IMG_TYPES.includes(f.type) || ['.jpg','.jpeg','.png','.webp'].includes('.'+f.name.split('.').pop().toLowerCase()); }
+async function uploadLampImage(file, machineName) {
+  const clean = String(machineName||'lamp').replace(/[^a-zA-Z0-9א-ת_-]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
+  return uploadScanedDoc(file, 'lamps/images', clean, `photo_${clean}`);
+}
+function ImageLightbox({ src, onClose }) {
+  useEffect(() => { const h=e=>{if(e.key==='Escape')onClose();}; window.addEventListener('keydown',h); return()=>window.removeEventListener('keydown',h); },[onClose]);
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+      <img src={src} alt="" className="max-w-full max-h-full rounded shadow-2xl object-contain" onClick={e=>e.stopPropagation()} />
+      <button onClick={onClose} className="absolute top-4 left-4 text-white text-3xl leading-none hover:text-gray-300">×</button>
+    </div>
+  );
+}
 
 const DEFAULT_LAMPS = [
   { 'שם המכונה': 'AL 120',   'מ. סידורי מכונה': '10620211', 'סוג מנורה': '', 'תאריך החלפה': '', 'כמות פולסים': '', 'הערות': '' },
@@ -84,6 +101,10 @@ export default function Lamps() {
   const [rows, setRows]       = useState(DEFAULT_LAMPS);
   const [editing, setEditing] = useState({});
   const [historyLamp, setHistoryLamp] = useState(null);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
+  const [uploadingImg, setUploadingImg] = useState(null);
+  const imgInputRef = useRef(null);
+  const imgTargetIdx = useRef(null);
 
   useEffect(() => {
     lampsCol.fetchSheet();
@@ -136,6 +157,26 @@ export default function Lamps() {
     setRows(prev => prev.filter((_, idx) => idx !== i));
   }
 
+  async function handleImgUpload(e) {
+    const f = e.target.files[0];
+    const i = imgTargetIdx.current;
+    if (!f || i === null) return;
+    if (!isImg(f)) return;
+    setUploadingImg(i);
+    try {
+      const url = await uploadLampImage(f, rows[i]['שם המכונה']);
+      const r = rows[i];
+      if (r._id) {
+        await lampsCol.updateRow(r._id, { ...r, imageUrl: url });
+      }
+      setRows(prev => prev.map((row, idx) => idx === i ? { ...row, imageUrl: url } : row));
+    } finally {
+      setUploadingImg(null);
+      imgTargetIdx.current = null;
+      e.target.value = '';
+    }
+  }
+
   const lastUpdate = useMemo(() => latestUpdate(historyCol.data), [historyCol.data]);
 
   return (
@@ -158,20 +199,42 @@ export default function Lamps() {
       <table className="w-full min-w-[700px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
-            {COLS.map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold whitespace-nowrap">{c}</th>)}
+            <th className="border border-[#999] px-3 py-2 font-bold whitespace-nowrap">{COLS[0]}</th>
+            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
+            {COLS.slice(1).map(c => <th key={c} className="border border-[#999] px-3 py-2 font-bold whitespace-nowrap">{c}</th>)}
             <th className="border border-[#999] px-2 py-2">פעולות</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((r, i) => (
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
-              {COLS.map(c => (
+              <td className="border border-[#999] px-1 py-1">
+                <input value={r[COLS[0]] ?? ''} onChange={e => handleEdit(i, COLS[0], e.target.value)}
+                  className="w-full bg-transparent px-2 py-0.5 focus:outline-none focus:bg-blue-50 rounded" />
+              </td>
+              <td className="border border-[#999] px-2 py-1.5 text-center">
+                {r['imageUrl'] ? (
+                  <img src={r['imageUrl']} alt="" onClick={() => setLightboxSrc(r['imageUrl'])}
+                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto" title="לחץ להגדלה" />
+                ) : (
+                  <button onClick={() => { imgTargetIdx.current = i; imgInputRef.current?.click(); }}
+                    disabled={uploadingImg === i}
+                    className="text-xs text-blue-500 hover:underline disabled:opacity-50">
+                    {uploadingImg === i ? 'מעלה...' : '+ תמונה'}
+                  </button>
+                )}
+                {r['imageUrl'] && (
+                  <button onClick={() => { imgTargetIdx.current = i; imgInputRef.current?.click(); }}
+                    disabled={uploadingImg === i}
+                    className="block text-xs text-gray-400 hover:text-blue-500 mx-auto mt-0.5">
+                    החלף
+                  </button>
+                )}
+              </td>
+              {COLS.slice(1).map(c => (
                 <td key={c} className="border border-[#999] px-1 py-1">
-                  <input
-                    value={r[c] ?? ''}
-                    onChange={e => handleEdit(i, c, e.target.value)}
-                    className="w-full bg-transparent px-2 py-0.5 focus:outline-none focus:bg-blue-50 rounded"
-                  />
+                  <input value={r[c] ?? ''} onChange={e => handleEdit(i, c, e.target.value)}
+                    className="w-full bg-transparent px-2 py-0.5 focus:outline-none focus:bg-blue-50 rounded" />
                 </td>
               ))}
               <td className="border border-[#999] px-2 py-1 text-center whitespace-nowrap">
@@ -203,6 +266,9 @@ export default function Lamps() {
           onClose={() => setHistoryLamp(null)}
         />
       )}
+
+      <input ref={imgInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleImgUpload} className="hidden" />
+      {lightboxSrc && <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     </div>
   );
 }

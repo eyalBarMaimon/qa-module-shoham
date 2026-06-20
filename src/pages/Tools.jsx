@@ -71,7 +71,7 @@ function EditToolDialog({ tool, onClose, onSave }) {
   async function handleSave() {
     if (!form['שם המכשיר'].trim()) return;
     setSaving(true);
-    let imageUrl = tool['imageUrl'] || '';
+    let imageUrl = imgPreview ? (tool['imageUrl'] || '') : '';
     if (imgFile) {
       try {
         imageUrl = await uploadToolImage(imgFile, form['שם המכשיר']);
@@ -589,12 +589,12 @@ export default function Tools({ autoOpen, onAutoOpened }) {
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"            label="#"            sort={sort} onSort={toggleSort} />
             <SortableHeader col="שם המכשיר"   label="שם המכשיר"   sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
             <SortableHeader col="מספר סידורי"  label="מספר סידורי"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="תאריך בדיקה"  label="תאריך בדיקה"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
             <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
             <SortableHeader col="_status"       label="סטטוס"         sort={sort} onSort={toggleSort} />
-            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
             <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
         </thead>
@@ -603,24 +603,24 @@ export default function Tools({ autoOpen, onAutoOpened }) {
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['שם המכשיר']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['מספר סידורי']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['תאריך בדיקה']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
-              <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
                 {r['imageUrl'] ? (
                   <img
                     src={r['imageUrl']}
                     alt="תמונת מכשיר"
                     onClick={() => setLightboxSrc(r['imageUrl'])}
-                    className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
+                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
                     title="לחץ להגדלה"
                   />
                 ) : (
                   <span className="text-gray-300 text-xs">—</span>
                 )}
               </td>
+              <td className="border border-[#999] px-3 py-1.5">{r['מספר סידורי']}</td>
+              <td className="border border-[#999] px-3 py-1.5">{r['תאריך בדיקה']}</td>
+              <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
+              <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
+              <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
                 <div className="flex flex-col items-center gap-1">
                   <button
