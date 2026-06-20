@@ -9,6 +9,34 @@ import { exportTablePDF } from '../utils/exportPDF';
 import { buildFileName, uploadScanedDoc } from '../utils/fileUpload';
 import FileDropZone from '../components/FileDropZone';
 
+const IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+const IMAGE_EXTS  = ['.jpg', '.jpeg', '.png', '.webp'];
+
+function isImageFile(file) {
+  if (IMAGE_TYPES.includes(file.type)) return true;
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
+  return IMAGE_EXTS.includes(ext);
+}
+
+async function uploadToolImage(file, toolName) {
+  const cleanName = String(toolName || 'tool').replace(/[^a-zA-Z0-9א-ת_-]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+  return uploadScanedDoc(file, 'tools/images', cleanName, `photo_${cleanName}`);
+}
+
+function ImageLightbox({ src, onClose }) {
+  useEffect(() => {
+    const h = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', h);
+    return () => window.removeEventListener('keydown', h);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4" onClick={onClose}>
+      <img src={src} alt="תמונת מכשיר" className="max-w-full max-h-full rounded shadow-2xl object-contain" onClick={e => e.stopPropagation()} />
+      <button onClick={onClose} className="absolute top-4 left-4 text-white text-3xl leading-none hover:text-gray-300">×</button>
+    </div>
+  );
+}
+
 // ── Edit tool dialog ──────────────────────────────────────────────────────────
 function EditToolDialog({ tool, onClose, onSave }) {
   const [form, setForm] = useState({
@@ -19,6 +47,10 @@ function EditToolDialog({ tool, onClose, onSave }) {
     'מיקום':       tool['מיקום']       || '',
   });
   const [saving, setSaving] = useState(false);
+  const [imgFile, setImgFile] = useState(null);
+  const [imgPreview, setImgPreview] = useState(tool['imageUrl'] || '');
+  const [imgError, setImgError] = useState('');
+  const imgInputRef = useRef(null);
 
   useEffect(() => {
     const handler = e => { if (e.key === 'Escape') onClose(); };
@@ -26,10 +58,29 @@ function EditToolDialog({ tool, onClose, onSave }) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  function handleImgChange(e) {
+    const f = e.target.files[0];
+    if (!f) return;
+    if (!isImageFile(f)) { setImgError('סוג קובץ לא נתמך — יש לבחור JPG, PNG או WEBP'); return; }
+    setImgError('');
+    setImgFile(f);
+    setImgPreview(URL.createObjectURL(f));
+  }
+
   async function handleSave() {
     if (!form['שם המכשיר'].trim()) return;
     setSaving(true);
-    await onSave(tool._id, form);
+    let imageUrl = tool['imageUrl'] || '';
+    if (imgFile) {
+      try {
+        imageUrl = await uploadToolImage(imgFile, form['שם המכשיר']);
+      } catch (err) {
+        setImgError(err.message || 'העלאת התמונה נכשלה');
+        setSaving(false);
+        return;
+      }
+    }
+    await onSave(tool._id, { ...form, imageUrl });
     setSaving(false);
     onClose();
   }
@@ -56,12 +107,30 @@ function EditToolDialog({ tool, onClose, onSave }) {
           {field('תחום מדידה', 'תחום מדידה')}
           {field('#', '#', 'ltr')}
           <div>{field('מיקום', 'מיקום')}</div>
+          <div className="col-span-2">
+            <label className="text-xs text-gray-500 block mb-1">תמונת מכשיר (JPG / PNG)</label>
+            <div className="flex items-center gap-3">
+              {imgPreview && (
+                <img src={imgPreview} alt="תמונה" className="w-14 h-14 object-cover rounded border border-gray-200 shrink-0" />
+              )}
+              <button type="button" onClick={() => imgInputRef.current?.click()}
+                className="border border-gray-300 rounded px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50">
+                {imgPreview ? 'החלף תמונה' : 'בחר תמונה'}
+              </button>
+              {imgPreview && (
+                <button type="button" onClick={() => { setImgFile(null); setImgPreview(''); }}
+                  className="text-red-400 hover:text-red-600 text-sm">הסר</button>
+              )}
+              <input ref={imgInputRef} type="file" accept=".jpg,.jpeg,.png,.webp" onChange={handleImgChange} className="hidden" />
+            </div>
+            {imgError && <div className="mt-1 text-xs text-red-600">{imgError}</div>}
+          </div>
         </div>
         <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
           <button onClick={onClose} className="px-4 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded">ביטול</button>
           <button onClick={handleSave} disabled={saving || !form['שם המכשיר'].trim()}
             className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700 disabled:opacity-50">
-            {saving ? 'שומר...' : 'שמור שינויים'}
+            {saving ? (imgFile ? 'מעלה תמונה...' : 'שומר...') : 'שמור שינויים'}
           </button>
         </div>
       </div>
@@ -411,6 +480,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
   const [editTool, setEditTool]       = useState(null);
   const [togglingId, setTogglingId]   = useState(null);
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   useEffect(() => {
     toolsCol.fetchSheet();
@@ -511,7 +581,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
       {toolsCol.error && <div className="text-red-500 text-sm mb-3">{toolsCol.error}</div>}
 
       <div className="overflow-x-auto">
-      <table className="w-full min-w-[860px] text-sm border-collapse">
+      <table className="w-full min-w-[920px] text-sm border-collapse">
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"            label="#"            sort={sort} onSort={toggleSort} />
@@ -521,6 +591,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
             <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
             <SortableHeader col="מיקום"         label="מיקום"         sort={sort} onSort={toggleSort} />
             <SortableHeader col="_status"       label="סטטוס"         sort={sort} onSort={toggleSort} />
+            <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
             <th className="border border-[#999] px-2 py-2 font-bold">פעולות</th>
           </tr>
         </thead>
@@ -534,6 +605,19 @@ export default function Tools({ autoOpen, onAutoOpened }) {
               <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מיקום']}</td>
               <td className="border border-[#999] px-3 py-1.5"><StatusBadge status={r._status} /></td>
+              <td className="border border-[#999] px-2 py-1.5 text-center">
+                {r['imageUrl'] ? (
+                  <img
+                    src={r['imageUrl']}
+                    alt="תמונת מכשיר"
+                    onClick={() => setLightboxSrc(r['imageUrl'])}
+                    className="w-10 h-10 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
+                    title="לחץ להגדלה"
+                  />
+                ) : (
+                  <span className="text-gray-300 text-xs">—</span>
+                )}
+              </td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
                 <div className="flex flex-col items-center gap-1">
                   <button
@@ -564,7 +648,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
             </tr>
           ))}
           {rows.length === 0 && !toolsCol.loading && (
-            <tr><td colSpan={8} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
+            <tr><td colSpan={9} className="text-center py-4 text-gray-400">אין תוצאות</td></tr>
           )}
         </tbody>
       </table>
@@ -593,6 +677,10 @@ export default function Tools({ autoOpen, onAutoOpened }) {
           onClose={() => setShowAddDialog(false)}
           onSave={handleAddTool}
         />
+      )}
+
+      {lightboxSrc && (
+        <ImageLightbox src={lightboxSrc} onClose={() => setLightboxSrc(null)} />
       )}
     </div>
   );
