@@ -27,5 +27,5 @@ export const TAB_SUBJECTS = {
   training: 'תוכנית הדרכה שנתית',
 };
 
-export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.5';
+export const APP_VERSION = import.meta.env.VITE_APP_VERSION || '1.0.4';
 export const APP_PASSWORD = import.meta.env.VITE_APP_PASSWORD || 'shoham2024';
