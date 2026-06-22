@@ -396,6 +396,7 @@ function MachineDialog({ machine, onClose, historyCol, machinesCol }) {
   );
 }
 
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Machines({ autoOpen, onAutoOpened }) {
   const machinesCol = useSheets('Machines');
@@ -436,6 +437,7 @@ export default function Machines({ autoOpen, onAutoOpened }) {
       await machinesCol.fetchSheet();
     }
   }
+
 
   const filtered = useMemo(() =>
     machinesCol.data
@@ -484,8 +486,8 @@ export default function Machines({ autoOpen, onAutoOpened }) {
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="מ. מכונה"    label="מ. מכונה"    sort={sort} onSort={toggleSort} />
-            <SortableHeader col="שם"           label="שם"           sort={sort} onSort={toggleSort} />
             <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
+            <SortableHeader col="שם"           label="שם"           sort={sort} onSort={toggleSort} />
             <SortableHeader col="יצרן"          label="יצרן"          sort={sort} onSort={toggleSort} />
             <SortableHeader col="תאריך כיול"   label="תאריך כיול"   sort={sort} onSort={toggleSort} />
             <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
@@ -498,13 +500,15 @@ export default function Machines({ autoOpen, onAutoOpened }) {
           {rows.map((r, i) => (
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['מ. מכונה']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['שם']}</td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
                 {r['imageUrl'] ? (
-                  <img src={r['imageUrl']} alt="" onClick={() => setLightboxSrc(r['imageUrl'])}
-                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto" title="לחץ להגדלה" />
+                  <img src={r['imageUrl']} alt=""
+                    onClick={() => setLightboxSrc(r['imageUrl'])}
+                    className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
+                    title="לחץ להגדלה" />
                 ) : <span className="text-gray-300 text-xs">—</span>}
               </td>
+              <td className="border border-[#999] px-3 py-1.5">{r['שם']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['יצרן']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תאריך כיול']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>

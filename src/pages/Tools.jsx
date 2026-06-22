@@ -469,6 +469,7 @@ function InspectionDialog({ tool, onClose, historyCol, toolsCol, employees }) {
   );
 }
 
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function Tools({ autoOpen, onAutoOpened }) {
   const toolsCol   = useSheets('Tools');
@@ -520,6 +521,7 @@ export default function Tools({ autoOpen, onAutoOpened }) {
     toolsCol.setData(prev => prev.map(r => r._id === id ? { ...r, ...data } : r));
     await toolsCol.updateRow(id, data);
   }
+
 
   const filtered = useMemo(() => {
     const seen = new Set();
@@ -588,8 +590,8 @@ export default function Tools({ autoOpen, onAutoOpened }) {
         <thead>
           <tr className="bg-[#D9D9D9] text-right">
             <SortableHeader col="#"            label="#"            sort={sort} onSort={toggleSort} />
-            <SortableHeader col="שם המכשיר"   label="שם המכשיר"   sort={sort} onSort={toggleSort} />
             <th className="border border-[#999] px-2 py-2 font-bold">תמונה</th>
+            <SortableHeader col="שם המכשיר"   label="שם המכשיר"   sort={sort} onSort={toggleSort} />
             <SortableHeader col="מספר סידורי"  label="מספר סידורי"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="תאריך בדיקה"  label="תאריך בדיקה"  sort={sort} onSort={toggleSort} />
             <SortableHeader col="מועד הבא"     label="מועד הבא"     sort={sort} onSort={toggleSort} />
@@ -602,20 +604,20 @@ export default function Tools({ autoOpen, onAutoOpened }) {
           {rows.map((r, i) => (
             <tr key={r._id || i} className={i % 2 === 0 ? 'bg-white' : 'bg-[#FAFAFA]'}>
               <td className="border border-[#999] px-3 py-1.5">{r['#']}</td>
-              <td className="border border-[#999] px-3 py-1.5">{r['שם המכשיר']}</td>
               <td className="border border-[#999] px-2 py-1.5 text-center">
                 {r['imageUrl'] ? (
                   <img
                     src={r['imageUrl']}
                     alt="תמונת מכשיר"
                     onClick={() => setLightboxSrc(r['imageUrl'])}
-                    className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
+                    className="w-20 h-20 object-cover rounded cursor-pointer hover:opacity-80 mx-auto"
                     title="לחץ להגדלה"
                   />
                 ) : (
                   <span className="text-gray-300 text-xs">—</span>
                 )}
               </td>
+              <td className="border border-[#999] px-3 py-1.5">{r['שם המכשיר']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מספר סידורי']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['תאריך בדיקה']}</td>
               <td className="border border-[#999] px-3 py-1.5">{r['מועד הבא']}</td>
