@@ -76,6 +76,12 @@ function EditMachineDialog({ machine, onClose, onSave }) {
     setImgPreview(URL.createObjectURL(f));
   }
 
+  useEffect(() => {
+    const handler = e => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   async function handleSave() {
     if (!form['שם'].trim()) return;
     setSaving(true);

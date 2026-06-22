@@ -52,11 +52,14 @@ export default function Dashboard({ onNavigate }) {
       const s = calcStatus(r['מועד הבא'], 'machines');
       if (s === 'red' || s === 'amber')
         rows.push({ category: 'מערכת', name: r['שם'], next: r['מועד הבא'], status: s, tab: 'machines' });
+<<<<<<< HEAD
     });
     filters.data.forEach(r => {
       const s = calcFilterStatus(r['תאריך אחרון'], r['תדירות']);
       if (s === 'amber')
         rows.push({ category: 'פילטר', name: `${r['מ. פילטר']} — ${r['מכונה']}`, next: r['תאריך אחרון'] || '—', status: s, tab: 'filters' });
+=======
+>>>>>>> 1625078d5497f20d70220ddefbcf9989074d1a99
     });
     return rows.sort((a, b) => {
       if (a.status === b.status) return 0;
